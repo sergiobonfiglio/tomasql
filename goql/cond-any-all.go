@@ -1,7 +1,9 @@
 package goql
 
 import (
+	"database/sql"
 	"fmt"
+
 	"github.com/lib/pq"
 )
 
@@ -13,16 +15,27 @@ const (
 )
 
 type anyAllArrayCondition struct {
-	col      Column
+	col      ParametricSql
 	comparer comparerType
 	operator quantifiedOperator
 	sqlable  ParametricSql
 	params   ParamsMap
 }
 
+func (a *anyAllArrayCondition) Columns() []Column {
+	var cols []Column
+	if col, ok := a.col.(Column); ok {
+		cols = append(cols, col)
+	}
+	if sqlableCol, ok := a.sqlable.(Column); ok {
+		cols = append(cols, sqlableCol)
+	}
+	return cols
+}
+
 var _ Condition = &anyAllArrayCondition{}
 
-func newAnyArrayCondition(col Column, comparer comparerType, sqlable ParametricSql) Condition {
+func newAnyArrayCondition(col ParametricSql, comparer comparerType, sqlable ParametricSql) Condition {
 	return &anyAllArrayCondition{
 		col:      col,
 		comparer: comparer,
@@ -32,7 +45,7 @@ func newAnyArrayCondition(col Column, comparer comparerType, sqlable ParametricS
 	}
 }
 
-func newAllArrayCondition(col Column, comparer comparerType, sqlable ParametricSql) Condition {
+func newAllArrayCondition(col ParametricSql, comparer comparerType, sqlable ParametricSql) Condition {
 	return &anyAllArrayCondition{
 		col:      col,
 		comparer: comparer,
@@ -43,11 +56,11 @@ func newAllArrayCondition(col Column, comparer comparerType, sqlable ParametricS
 }
 
 func (a *anyAllArrayCondition) SQL(params ParamsMap) string {
-
 	a.params = params.AddAll(a.params)
-	sql, _ := a.sqlable.sqlWithParams(a.params)
+	sqlWithParams, _ := a.sqlable.sqlWithParams(a.params)
+	colSql, _ := a.col.sqlWithParams(a.params)
 
-	return fmt.Sprintf("%s %s %s%s", a.col.getRef(), a.comparer, a.operator, sql)
+	return fmt.Sprintf("%s %s %s%s", colSql, a.comparer, a.operator, sqlWithParams)
 }
 
 func (a *anyAllArrayCondition) And(condition Condition) Condition {
@@ -59,7 +72,7 @@ func (a *anyAllArrayCondition) Or(condition Condition) Condition {
 }
 
 type sqlableArray struct {
-	array  any
+	array  sql.Scanner
 	params ParamsMap
 }
 
@@ -73,23 +86,14 @@ func newSQLableArray(array any) ParametricSql {
 	return &sqlableArray{array: pq.Array(array), params: ParamsMap{}}
 }
 
-//func (s *sqlableArray) SQL() (sql string, params []any) {
-//	sql, paramsMap := s.sqlWithParams(s.params)
-//	return sql, paramsMap.ToSlice()
-//}
-
 func (s *sqlableArray) sqlWithParams(params ParamsMap) (string, ParamsMap) {
 	s.params = params.AddAll(s.params)
-	if _, ok := params[s.array]; !ok {
-		params[s.array] = len(params) + 1
-	}
-	return fmt.Sprintf("($%d)", params[s.array]), params
-}
 
-//func (s *sqlableArray) AsNamedSubQuery(alias string) SQLable {
-//	panic("unsupported")
-//}
-//
-//func (s *sqlableArray) AsSubQuery() SQLable {
-//	panic("unsupported")
-//}
+	// Use a pointer to the slice as a key to ensure it's hashable. Note: we'll have to pass the array
+	// multiple times in the query params even if it's the same array, but it should be fine for most use cases.
+	arrayKey := &s.array
+	if _, ok := s.params[arrayKey]; !ok {
+		s.params[arrayKey] = len(s.params) + 1
+	}
+	return fmt.Sprintf("($%d)", s.params[arrayKey]), s.params
+}

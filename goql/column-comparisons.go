@@ -1,6 +1,8 @@
 package goql
 
-func (c Col[T]) Eq(other Column) Condition {
+var _ ComparableParam[int] = Col[int]{}
+
+func (c Col[T]) Eq(other ParametricSql) Condition {
 	return newBinaryCondition(c, other, comparerEq)
 }
 
@@ -8,7 +10,7 @@ func (c Col[T]) EqParam(other T) Condition {
 	return newBinaryParamCondition(c, other, comparerEq)
 }
 
-func (c Col[T]) Gt(other Column) Condition {
+func (c Col[T]) Gt(other ParametricSql) Condition {
 	return newBinaryCondition(c, other, comparerGt)
 }
 
@@ -16,7 +18,7 @@ func (c Col[T]) GtParam(other T) Condition {
 	return newBinaryParamCondition(c, other, comparerGt)
 }
 
-func (c Col[T]) Ge(other Column) Condition {
+func (c Col[T]) Ge(other ParametricSql) Condition {
 	return newBinaryCondition(c, other, comparerGe)
 }
 
@@ -24,7 +26,7 @@ func (c Col[T]) GeParam(other T) Condition {
 	return newBinaryParamCondition(c, other, comparerGe)
 }
 
-func (c Col[T]) Lt(other Column) Condition {
+func (c Col[T]) Lt(other ParametricSql) Condition {
 	return newBinaryCondition(c, other, comparerLt)
 }
 
@@ -32,12 +34,28 @@ func (c Col[T]) LtParam(other T) Condition {
 	return newBinaryParamCondition(c, other, comparerLt)
 }
 
-func (c Col[T]) Le(other Column) Condition {
+func (c Col[T]) Le(other ParametricSql) Condition {
 	return newBinaryCondition(c, other, comparerLe)
 }
 
 func (c Col[T]) LeParam(other T) Condition {
 	return newBinaryParamCondition(c, other, comparerLe)
+}
+
+func (c Col[T]) Like(other ParametricSql) Condition {
+	return newBinaryCondition(c, other, comparerLike)
+}
+
+func (c Col[T]) LikeParam(other string) Condition {
+	return newBinaryParamCondition(c, other, comparerLike)
+}
+
+func (c Col[T]) ILike(other ParametricSql) Condition {
+	return newBinaryCondition(c, other, comparerILike)
+}
+
+func (c Col[T]) ILikeParam(other string) Condition {
+	return newBinaryParamCondition(c, other, comparerILike)
 }
 
 func (c Col[T]) InArray(array []T) Condition {
@@ -86,4 +104,12 @@ func (c Col[T]) LeAny(sqlable ParametricSql) Condition {
 
 func (c Col[T]) LeAll(sqlable ParametricSql) Condition {
 	return newAllArrayCondition(c, comparerLe, sqlable)
+}
+
+func (c Col[T]) IsNull() Condition {
+	return newIsCondition(c, comparerNull)
+}
+
+func (c Col[T]) IsNotNull() Condition {
+	return newIsCondition(c, comparerNotNull)
 }

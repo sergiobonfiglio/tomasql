@@ -1,8 +1,9 @@
 package goql
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestConditions(t *testing.T) {
@@ -16,33 +17,41 @@ func TestConditions(t *testing.T) {
 	}
 
 	testGroups := []testGroup{
-
+		{
+			name: "identity",
+			tests: []test{
+				{
+					want: "1 = 1",
+					got:  IdentityCond.SQL(ParamsMap{}),
+				},
+			},
+		},
 		{
 			name: "binary conditions",
 			tests: []test{
 				{
-					want: "account.id = config.account_id",
-					got:  Account.Id.Eq(Config.AccountId).SQL(ParamsMap{}),
+					want: "account.id = shopping_cart.owner_id",
+					got:  Account.Id.Eq(ShoppingCart.OwnerId).SQL(ParamsMap{}),
 				},
 				{
-					want: "a.id = c.account_id",
-					got:  Account.As("a").Id.Eq(Config.As("c").AccountId).SQL(ParamsMap{}),
+					want: "a.id = s.owner_id",
+					got:  Account.As("a").Id.Eq(ShoppingCart.As("s").OwnerId).SQL(ParamsMap{}),
 				},
 				{
-					want: "account.id > config.account_id",
-					got:  Account.Id.Gt(Config.AccountId).SQL(ParamsMap{}),
+					want: "account.id > shopping_cart.owner_id",
+					got:  Account.Id.Gt(ShoppingCart.OwnerId).SQL(ParamsMap{}),
 				},
 				{
-					want: "account.id >= config.account_id",
-					got:  Account.Id.Ge(Config.AccountId).SQL(ParamsMap{}),
+					want: "account.id >= shopping_cart.owner_id",
+					got:  Account.Id.Ge(ShoppingCart.OwnerId).SQL(ParamsMap{}),
 				},
 				{
-					want: "account.id < config.account_id",
-					got:  Account.Id.Lt(Config.AccountId).SQL(ParamsMap{}),
+					want: "account.id < shopping_cart.owner_id",
+					got:  Account.Id.Lt(ShoppingCart.OwnerId).SQL(ParamsMap{}),
 				},
 				{
-					want: "account.id <= config.account_id",
-					got:  Account.Id.Le(Config.AccountId).SQL(ParamsMap{}),
+					want: "account.id <= shopping_cart.owner_id",
+					got:  Account.Id.Le(ShoppingCart.OwnerId).SQL(ParamsMap{}),
 				},
 			},
 		},
@@ -74,7 +83,6 @@ func TestConditions(t *testing.T) {
 		{
 			name: "in",
 			tests: []test{
-
 				{
 					want: "account.id IN ($1)",
 					got:  Account.Id.InArray([]int64{1}).SQL(ParamsMap{}),
@@ -84,22 +92,30 @@ func TestConditions(t *testing.T) {
 					got:  Account.Id.InArray([]int64{1, 1, 2, 3, 1}).SQL(ParamsMap{}),
 				},
 				{
-					want: "account.id IN (SELECT account.id FROM account)",
-					got:  Account.Id.In(newBuilder().Select(Account.Id).From(Account).AsSubQuery()).SQL(ParamsMap{}),
+					want: "account.id IN (SELECT shopping_cart.owner_id FROM shopping_cart)",
+					got:  Account.Id.In(NewBuilder().Select(ShoppingCart.OwnerId).From(ShoppingCart).AsSubQuery()).SQL(ParamsMap{}),
+				},
+			},
+		},
+		{
+			name: "exists",
+			tests: []test{
+				{
+					want: "EXISTS(SELECT 1)",
+					got:  NewExistsCondition(NewBuilder().Select(NewFixedCol(1, nil))).SQL(ParamsMap{}),
 				},
 			},
 		},
 		{
 			name: "any",
 			tests: []test{
-
 				{
 					want: "account.id = ANY($1)",
 					got:  Account.Id.EqAny(SQLArray([]int64{1})).SQL(ParamsMap{}),
 				},
 				{
-					want: "account.id = ANY(SELECT account.id FROM account)",
-					got:  Account.Id.EqAny(newBuilder().Select(Account.Id).From(Account).AsSubQuery()).SQL(ParamsMap{}),
+					want: "account.id = ANY(SELECT shopping_cart.owner_id FROM shopping_cart)",
+					got:  Account.Id.EqAny(NewBuilder().Select(ShoppingCart.OwnerId).From(ShoppingCart).AsSubQuery()).SQL(ParamsMap{}),
 				},
 				{
 					want: "account.id > ANY($1)",
@@ -110,14 +126,13 @@ func TestConditions(t *testing.T) {
 		{
 			name: "all",
 			tests: []test{
-
 				{
 					want: "account.id = ALL($1)",
 					got:  Account.Id.EqAll(SQLArray([]int64{1})).SQL(ParamsMap{}),
 				},
 				{
-					want: "account.id = ALL(SELECT account.id FROM account)",
-					got:  Account.Id.EqAll(newBuilder().Select(Account.Id).From(Account).AsSubQuery()).SQL(ParamsMap{}),
+					want: "account.id = ALL(SELECT shopping_cart.owner_id FROM shopping_cart)",
+					got:  Account.Id.EqAll(NewBuilder().Select(ShoppingCart.OwnerId).From(ShoppingCart).AsSubQuery()).SQL(ParamsMap{}),
 				},
 				{
 					want: "account.id > ALL($1)",
@@ -128,7 +143,6 @@ func TestConditions(t *testing.T) {
 		{
 			name: "multiple params",
 			tests: []test{
-
 				{
 					want: "account.id = $1 AND account.id = $1",
 					got:  Account.Id.EqParam(1).And(Account.Id.EqParam(1)).SQL(ParamsMap{}),
@@ -191,6 +205,87 @@ func TestConditions(t *testing.T) {
 					require.Equal(tt, testItem.want, testItem.got)
 				})
 			}
+		})
+	}
+}
+
+func TestCondition_Columns(t *testing.T) {
+	type test struct {
+		name string
+		impl Condition
+		want []Column
+	}
+
+	tests := []test{
+		{
+			name: "identity condition columns",
+			impl: IdentityCond,
+			want: []Column{NewCol[string]("1", nil), NewCol[string]("1", nil)},
+		},
+		{
+			name: "binary condition columns",
+			impl: newBinaryCondition(NewCol[int64]("col1", nil), NewCol[int64]("col2", nil), comparerEq),
+			want: []Column{NewCol[int64]("col1", nil), NewCol[int64]("col2", nil)},
+		},
+		{
+			name: "binary condition with param columns",
+			impl: newBinaryParamCondition(NewCol[int64]("col1", nil), int64(42), comparerEq),
+			want: []Column{NewCol[int64]("col1", nil)},
+		},
+		{
+			name: "in array condition columns",
+			impl: newInArrayCondition(NewCol[int64]("col1", nil), []int64{1, 2, 3}),
+			want: []Column{NewCol[int64]("col1", nil)},
+		},
+		{
+			name: "in subquery condition columns",
+			impl: newInCondition(NewCol[int64]("col1", nil), NewBuilder().Select(NewCol[int64]("col2", nil))),
+			want: []Column{NewCol[int64]("col1", nil)},
+		},
+		{
+			name: "is condition columns",
+			impl: newIsCondition(NewCol[int64]("col1", nil), comparerNull),
+			want: []Column{NewCol[int64]("col1", nil)},
+		},
+		{
+			name: "grouped condition columns",
+			impl: Grouped(newBinaryCondition(NewCol[int64]("col1", nil), NewCol[int64]("col2", nil), comparerEq)),
+			want: []Column{NewCol[int64]("col1", nil), NewCol[int64]("col2", nil)},
+		},
+		{
+			name: "exists condition columns",
+			impl: NewExistsCondition(NewBuilder().Select(NewCol[int64]("col1", nil))),
+			want: []Column{},
+		},
+		{
+			name: "and condition columns",
+			impl: newBinaryCondition(NewCol[int64]("col1", nil), NewCol[int64]("col2", nil), comparerEq).
+				And(newBinaryCondition(NewCol[int64]("col3", nil), NewCol[int64]("col4", nil), comparerEq)),
+			want: []Column{
+				NewCol[int64]("col1", nil),
+				NewCol[int64]("col2", nil),
+				NewCol[int64]("col3", nil),
+				NewCol[int64]("col4", nil),
+			},
+		},
+		{
+			name: "or condition columns",
+			impl: newBinaryCondition(NewCol[int64]("col1", nil), NewCol[int64]("col2", nil), comparerEq).
+				Or(newBinaryCondition(NewCol[int64]("col3", nil), NewCol[int64]("col4", nil), comparerEq)),
+			want: []Column{
+				NewCol[int64]("col1", nil),
+				NewCol[int64]("col2", nil),
+				NewCol[int64]("col3", nil),
+				NewCol[int64]("col4", nil),
+			},
+		},
+	}
+
+	for _, testItem := range tests {
+		got := testItem.impl.Columns()
+		name := testItem.impl.SQL(ParamsMap{})
+		t.Run(testItem.name+"_"+name, func(tt *testing.T) {
+			require.ElementsMatch(tt, testItem.want, got)
 		})
 	}
 }

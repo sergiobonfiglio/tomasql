@@ -1,44 +1,44 @@
 package goql
 
 type Builder1 interface {
+	// SelectCols selects distinct columns from the table. Equivalent to SelectDistinct but avoids
+	// the need to convert Column to ParametricSql.
+	SelectCols(first Column, columns ...Column) BuilderWithSelect
 	Select(ParametricSql, ...ParametricSql) BuilderWithSelect
+
+	// SelectDistinctCols selects distinct columns from the table. Equivalent to SelectDistinct but avoids
+	// the need to convert Column to ParametricSql.
+	SelectDistinctCols(Column, ...Column) BuilderWithSelect
 	SelectDistinct(ParametricSql, ...ParametricSql) BuilderWithSelect
 	SelectDistinctAll() BuilderWithSelect
 	SelectAll() BuilderWithSelect
 }
 
 type BuilderWithSelect interface {
-	SQLable
-	From(SQLable) BuilderWithFrom
+	SubQueryable
+	From(Table) BuilderWithTables
 }
 
-type BuilderWithFrom interface {
-	SQLable
+type BuilderWithTables interface {
+	SubQueryable
 	LeftJoin(Table) BuilderWithJoin
 	Join(Table) BuilderWithJoin
 	RightJoin(Table) BuilderWithJoin
+
+	Joins(...*JoinItem) BuilderWithTables
+
 	Where(Condition) BuilderWithWhere
 	GroupBy(ParametricSql, ...ParametricSql) BuilderWithGroupBy
 	OrderBy(SortColumn, ...SortColumn) BuilderWithOrderBy
 }
 
 type BuilderWithJoin interface {
-	SQLable
-	On(Condition) BuilderWithOn
-}
-
-type BuilderWithOn interface {
-	SQLable
-	LeftJoin(Table) BuilderWithJoin
-	Join(Table) BuilderWithJoin
-	RightJoin(Table) BuilderWithJoin
-	Where(Condition) BuilderWithWhere
-	GroupBy(ParametricSql, ...ParametricSql) BuilderWithGroupBy
-	OrderBy(SortColumn, ...SortColumn) BuilderWithOrderBy
+	SubQueryable
+	On(Condition) BuilderWithTables
 }
 
 type BuilderWithWhere interface {
-	SQLable
+	SubQueryable
 	OrderBy(SortColumn, ...SortColumn) BuilderWithOrderBy
 }
 
@@ -50,27 +50,31 @@ type BuilderWithGroupBy interface {
 type BuilderWithHaving BuilderWithWhere
 
 type BuilderWithOrderBy interface {
-	SQLable
+	SubQueryable
 	Limit(int) BuilderWithLimit
 }
 
 type BuilderWithLimit interface {
-	SQLable
+	SubQueryable
 	Offset(int) SQLable
 }
 
 type SQLable interface {
+	ParametricSql
 	SQL() (sql string, params []any)
-	sqlWithParams(ParamsMap) (string, ParamsMap)
-	AsNamedSubQuery(string) SQLable
+}
+
+type SubQueryable interface {
+	SQLable
+	AsNamedSubQuery(string) Table
 	AsSubQuery() SQLable
 }
 
 type SortDirection string
 
 const (
-	OrderByAsc  = "ASC"
-	OrderByDesc = "DESC"
+	OrderByAsc  SortDirection = "ASC"
+	OrderByDesc SortDirection = "DESC"
 )
 
 type SortColumn interface {
@@ -79,5 +83,12 @@ type SortColumn interface {
 	Direction() SortDirection
 	SQL() string
 
+	// Column returns the underlying Column that this SortColumn represents or nil if it is not a Column (e.g. subquery).
+	Column() Column
+
 	getRef() string
+}
+
+type Integer interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64
 }

@@ -4,13 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"github.com/docker/go-connections/nat"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 	"html/template"
 	"log"
 	"math/rand"
@@ -21,29 +14,51 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/docker/go-connections/nat"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq" // Add this line for PostgreSQL driver
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 //go:generate go run .
 
 func main() {
-
 	// Get the directory of the current Go source file
 	_, filename, _, _ := runtime.Caller(0)
 	dir := filepath.Dir(filename)
+
+	pkgName := "goql"
+	packageDir := filepath.Join(dir, "..", "..", pkgName)
 
 	tmpl, err := template.ParseFiles(filepath.Join(dir, "table-def.tmpl"))
 	if err != nil {
 		panic(err)
 	}
 
-	outPath := filepath.Join(dir, "..", "..", "goql", "table-definitions.gen.go")
+	closeFile := func(outputFile *os.File) {
+		err := outputFile.Close()
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	outPath := filepath.Clean(filepath.Join(packageDir, "table-definitions.gen.go"))
 	outputFile, err := os.Create(outPath)
 	if err != nil {
 		panic(err)
 	}
-	defer outputFile.Close()
+	defer closeFile(outputFile)
 
-	tableDefData, err := getTableDefinitionFromTestDB()
+	container, err := SetupTestContainer(nil)
+	if err != nil {
+		panic(err)
+	}
+
+	tableDefData, err := getTableDefinitionFromTestDB(container, pkgName)
 	if err != nil {
 		panic(err)
 	}
@@ -53,25 +68,44 @@ func main() {
 		panic(err)
 	}
 	log.Println("Generated table definitions")
-}
 
-func getTableDefinitionFromTestDB() (*TemplateData, error) {
-	container, err := SetupTestContainer(nil)
+	// Generate graph definitions
+	tmplGraph, err := template.ParseFiles(filepath.Join(dir, "tables-graph.tmpl"))
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
+	outGraphPath := filepath.Clean(filepath.Join(packageDir, "tables-graph.gen.go"))
+	outputGraphFile, err := os.Create(outGraphPath)
+	if err != nil {
+		panic(err)
+	}
+
+	defer closeFile(outputGraphFile)
+
+	dbGraphData, err := getDbGraphFromTestDB(container, pkgName)
+	if err != nil {
+		panic(err)
+	}
+	err = tmplGraph.Execute(outputGraphFile, dbGraphData)
+	if err != nil {
+		panic(err)
+	}
+	log.Println("Generated table graph")
+}
+
+func getTableDefinitionFromTestDB(container *sqlx.DB, pkgName string) (*TemplateData, error) {
 	type row struct {
 		TableName     string `db:"table_name"`
 		ColumnName    string `db:"column_name"`
-		UdtName       string `db:"udt_name"` //type
+		UdtName       string `db:"udt_name"` // type
 		IsNullable    bool   `db:"is_nullable"`
 		IsUserDefined bool   `db:"is_user_defined"`
 		IsEnum        bool   `db:"is_enum"`
 		BaseType      string `db:"base_type"`
 	}
 	result := []row{}
-	err = container.Select(&result, `
+	err := container.Select(&result, `
 SELECT c.table_name,
                 c.column_name,
                 c.udt_name,
@@ -101,7 +135,7 @@ ORDER BY 1, 2
 		return nil, err
 	}
 
-	data := &TemplateData{Package: "goql"}
+	data := &TemplateData{Package: pkgName}
 	var currTable *Table
 	for _, item := range result {
 		if currTable == nil || currTable.SqlName != item.TableName {
@@ -112,7 +146,7 @@ ORDER BY 1, 2
 			}
 			data.Tables = append(data.Tables, currTable)
 		}
-		//TODO: constants for enums?
+		// TODO: constants for enums?
 		column := Column{
 			Name:    snakeToCamel(item.ColumnName),
 			SqlName: item.ColumnName,
@@ -126,7 +160,6 @@ ORDER BY 1, 2
 }
 
 func psqlTypeToGo(psqlType string) string {
-
 	switch psqlType {
 	case "bool":
 		return "bool"
@@ -179,6 +212,81 @@ type Column struct {
 	Name    string
 	SqlName string
 	Type    string
+}
+
+// getDbGraphFromTestDB retrieves the database graph from the test database. Note that at the moment it only retunrs
+// 'forward' links, i.e. from the table that has a foreign key to the table that is referenced by the foreign key.
+func getDbGraphFromTestDB(container *sqlx.DB, pkgName string) (*DbGraphTemplateData, error) {
+	type row struct {
+		FromTable  string `db:"from_table"`
+		ToTable    string `db:"to_table"`
+		FromColumn string `db:"from_column"`
+		ToColumn   string `db:"to_column"`
+	}
+	result := []row{}
+	err := container.Select(&result, `SELECT
+    tc.table_name AS from_table,
+    ccu.table_name AS to_table,
+    kcu.column_name AS from_column,
+    ccu.column_name AS to_column
+FROM
+    information_schema.table_constraints AS tc
+        JOIN information_schema.key_column_usage AS kcu
+             ON tc.constraint_name = kcu.constraint_name
+                 AND tc.constraint_schema = kcu.constraint_schema
+        JOIN information_schema.constraint_column_usage AS ccu
+             ON tc.constraint_name = ccu.constraint_name
+                 AND tc.constraint_schema = ccu.constraint_schema
+WHERE
+    tc.constraint_type = 'FOREIGN KEY'`)
+	if err != nil {
+		return nil, err
+	}
+
+	data := &DbGraphTemplateData{
+		Package: pkgName,
+		Links:   map[string]map[string]map[string]*Link{},
+	}
+
+	addLink := func(fromType, toType, fromField, toField string) {
+		if _, exists := data.Links[fromType]; !exists {
+			data.Links[fromType] = map[string]map[string]*Link{}
+		}
+		if _, exists := data.Links[fromType][toType]; !exists {
+			data.Links[fromType][toType] = map[string]*Link{}
+		}
+		data.Links[fromType][toType][fromField] = &Link{
+			FromTable:  fromType,
+			FromColumn: fromField,
+			ToTable:    toType,
+			ToColumn:   toField,
+		}
+	}
+
+	for _, item := range result {
+		fromType := snakeToCamel(item.FromTable)
+		toType := snakeToCamel(item.ToTable)
+		fromField := snakeToCamel(item.FromColumn)
+		toField := snakeToCamel(item.ToColumn)
+		addLink(fromType, toType, fromField, toField)
+		// inverse link
+		addLink(toType, fromType, toField, fromField)
+	}
+
+	return data, nil
+}
+
+type DbGraphTemplateData struct {
+	Package string
+	// fromTable -> toTable -> fromColumn -> Link
+	Links map[string]map[string]map[string]*Link
+}
+
+type Link struct {
+	FromTable  string
+	FromColumn string
+	ToTable    string
+	ToColumn   string
 }
 
 func SetupTestContainer(tt *testing.T) (*sqlx.DB, error) {
@@ -267,7 +375,7 @@ func SetupTestContainer(tt *testing.T) (*sqlx.DB, error) {
 
 	logFn("set up test database: %s", randDbName)
 
-	return rootDB, nil
+	return db, nil
 }
 
 func readDbSchema() string {

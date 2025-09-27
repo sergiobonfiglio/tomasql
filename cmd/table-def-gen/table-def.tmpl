@@ -19,7 +19,7 @@ var _ Table = &{{ .TypeDefName }}TableDef{}
 func new{{ .TypeDefName }}Table() *{{ .TypeDefName }}TableDef {
 	tDef := &{{ .TypeDefName }}TableDef{}
 	{{- range .Columns }}
-	tDef.{{ .Name }} = newCol[{{ .Type }}]("{{ .SqlName }}", tDef)
+	tDef.{{ .Name }} = NewCol[{{ .Type }}]("{{ .SqlName }}", tDef)
 	{{- end }}
 	tDef.sqlableTable = newSqlableTable(tDef)
 	return tDef
@@ -29,14 +29,6 @@ var {{ .TypeDefName }} = new{{ .TypeDefName }}Table()
 
 func (a *{{ .TypeDefName }}TableDef) TableName() string {
 	return "{{ .SqlName }}"
-}
-
-func (a *{{ .TypeDefName }}TableDef) Columns() []Column {
-	return []Column{
-	    {{- range .Columns }}
-	    a.{{ .Name }},
-	    {{- end }}
-	}
 }
 
 func (a *{{ .TypeDefName }}TableDef) Alias() *string {
@@ -50,7 +42,7 @@ func (a *{{ .TypeDefName }}TableDef) As(x string) *{{ .TypeDefName }}TableDef {
 }
 
 func (a *{{ .TypeDefName }}TableDef) Star() ParametricSql {
-	return newCol[string]("*", a)
+	return NewCol[string]("*", a)
 }
 {{- end }}
 

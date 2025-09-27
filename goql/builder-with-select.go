@@ -19,7 +19,7 @@ func newBuilderWithSelect(distinct bool, first ParametricSql, columns ...Paramet
 	return b
 }
 
-func (b *builderWithSelect) AsNamedSubQuery(alias string) SQLable {
+func (b *builderWithSelect) AsNamedSubQuery(alias string) Table {
 	return newWithOptionalAlias(b, &alias)
 }
 
@@ -27,7 +27,7 @@ func (b *builderWithSelect) AsSubQuery() SQLable {
 	return newWithOptionalAlias(b, nil)
 }
 
-func (b *builderWithSelect) From(t SQLable) BuilderWithFrom {
+func (b *builderWithSelect) From(t Table) BuilderWithTables {
 	return newBuilderWithFrom(b, t)
 }
 
@@ -49,12 +49,12 @@ func (b *builderWithSelect) sqlWithParams(params ParamsMap) (string, ParamsMap) 
 		distinctStr = "DISTINCT "
 	}
 
-	return "SELECT " + distinctStr + strings.Join(colStr, ", "), ParamsMap{}
+	return "SELECT " + distinctStr + strings.Join(colStr, ", "), b.params
 }
 
-func (b *builderWithSelect) SQL() (string, []any) {
-	sql, params := b.sqlWithParams(b.params)
-	return sql, params.ToSlice()
+func (b *builderWithSelect) SQL() (sql string, params []any) {
+	sql, paramsMap := b.sqlWithParams(b.params)
+	return sql, paramsMap.ToSlice()
 }
 
 type builderWithSelectAll struct {
@@ -69,7 +69,7 @@ func newBuilderWithSelectAll(distinct bool) BuilderWithSelect {
 	}
 }
 
-func (b *builderWithSelectAll) From(t SQLable) BuilderWithFrom {
+func (b *builderWithSelectAll) From(t Table) BuilderWithTables {
 	return newBuilderWithFrom(b, t)
 }
 
@@ -80,9 +80,10 @@ func (b *builderWithSelectAll) sqlWithParams(params ParamsMap) (string, ParamsMa
 	}
 	return "SELECT " + distinctStr + "*", params
 }
-func (b *builderWithSelectAll) SQL() (string, []any) {
-	sql, params := b.sqlWithParams(b.params)
-	return sql, params.ToSlice()
+
+func (b *builderWithSelectAll) SQL() (sql string, params []any) {
+	sql, paramsMap := b.sqlWithParams(b.params)
+	return sql, paramsMap.ToSlice()
 }
 
 type withOptionalAlias struct {
@@ -90,7 +91,22 @@ type withOptionalAlias struct {
 	alias *string
 }
 
-func newWithOptionalAlias(sqlable SQLable, alias *string) SQLable {
+// TableName implements the Table interface for withOptionalAlias.
+// Returns the alias if present, otherwise an empty string.
+func (b *withOptionalAlias) TableName() string {
+	if b.alias != nil {
+		return *b.alias
+	}
+	return ""
+}
+
+func (b *withOptionalAlias) Alias() *string {
+	return b.alias
+}
+
+var _ Table = &withOptionalAlias{}
+
+func newWithOptionalAlias(sqlable SQLable, alias *string) *withOptionalAlias {
 	return &withOptionalAlias{SQLable: sqlable, alias: alias}
 }
 

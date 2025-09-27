@@ -16,7 +16,7 @@ func newBuilderWithWhere(prev *builderWithJoin, where Condition) BuilderWithWher
 	return b
 }
 
-func (b *builderWithWhere) AsNamedSubQuery(alias string) SQLable {
+func (b *builderWithWhere) AsNamedSubQuery(alias string) Table {
 	return newWithOptionalAlias(b, &alias)
 }
 
@@ -29,16 +29,16 @@ func (b *builderWithWhere) OrderBy(column SortColumn, column2 ...SortColumn) Bui
 }
 
 func (b *builderWithWhere) sqlWithParams(params ParamsMap) (string, ParamsMap) {
-
 	b.params = params.AddAll(b.params)
-	sql, params := b.prevStage.sqlWithParams(b.params)
+	var sql string
+	sql, b.params = b.prevStage.sqlWithParams(b.params)
 
 	whereStr := ""
 	if b.where != nil {
-		whereStr = " WHERE " + b.where.SQL(params)
+		whereStr = " WHERE " + b.where.SQL(b.params)
 	}
 
-	return sql + whereStr, params
+	return sql + whereStr, b.params
 }
 
 func (b *builderWithWhere) SQL() (sql string, params []any) {

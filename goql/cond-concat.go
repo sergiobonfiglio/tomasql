@@ -17,6 +17,14 @@ type ConcatCondition struct {
 	connector  ConditionConnector
 }
 
+func (c *ConcatCondition) Columns() []Column {
+	var cols []Column
+	for _, cond := range c.conditions {
+		cols = append(cols, cond.Columns()...)
+	}
+	return cols
+}
+
 var _ Condition = &ConcatCondition{} // Ensure ConcatCondition implements Condition
 
 func newConcatCondition(connector ConditionConnector, conditions ...Condition) *ConcatCondition {
@@ -29,7 +37,7 @@ func (c *ConcatCondition) SQL(p ParamsMap) string {
 		innerSQLs = append(innerSQLs, cond.SQL(p))
 	}
 	connector := fmt.Sprintf(" %s ", c.connector)
-	return fmt.Sprintf("%s", strings.Join(innerSQLs, connector))
+	return strings.Join(innerSQLs, connector)
 }
 
 func (c *ConcatCondition) And(condition Condition) Condition {

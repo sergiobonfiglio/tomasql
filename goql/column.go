@@ -1,62 +1,31 @@
 package goql
 
-type Table interface {
-	TableName() string
-	Columns() []Column
+import "fmt"
 
-	// cannot define As() here because we need it to return a concrete table to be
-	// able to access specific columns and generics won't work due to type erasure
-	//As(x string)
-	Alias() *string
-	SQLable
+type Comparable interface {
+	Eq(other ParametricSql) Condition
+	Gt(other ParametricSql) Condition
+	Ge(other ParametricSql) Condition
+	Lt(other ParametricSql) Condition
+	Le(other ParametricSql) Condition
+	IsNull() Condition
+	IsNotNull() Condition
+	Like(other ParametricSql) Condition
+	LikeParam(pattern string) Condition
+	ILike(other ParametricSql) Condition
+	ILikeParam(pattern string) Condition
 }
 
-type sqlableTable struct {
-	table Table
-}
-
-func newSqlableTable(t Table) *sqlableTable {
-	return &sqlableTable{table: t}
-}
-
-func (s *sqlableTable) SQL() (string, []any) {
-	sql, params := s.sqlWithParams(ParamsMap{})
-	return sql, params.ToSlice()
-}
-
-func (s *sqlableTable) sqlWithParams(params ParamsMap) (string, ParamsMap) {
-	tRef := s.table.TableName()
-	if s.table.Alias() != nil {
-		tRef += " AS " + *s.table.Alias()
-	}
-	return tRef, params
-}
-
-func (s *sqlableTable) AsNamedSubQuery(alias string) SQLable {
-	return newWithOptionalAlias(s, &alias)
-}
-
-func (b *sqlableTable) AsSubQuery() SQLable {
-	return newWithOptionalAlias(b, nil)
-}
-
-var _ SQLable = &sqlableTable{}
-
-type Comparable[T any] interface {
-	Eq(other Column) Condition
+type ComparableParam[T any] interface {
 	EqParam(other T) Condition
-	Gt(other Column) Condition
 	GtParam(other T) Condition
-	Ge(other Column) Condition
 	GeParam(other T) Condition
-	Lt(other Column) Condition
 	LtParam(other T) Condition
-	Le(other Column) Condition
 	LeParam(other T) Condition
+	InArray(array []T) Condition
 }
 
-type SetComparable[T any] interface {
-	InArray(array []T) Condition
+type SetComparable interface {
 	In(sqlable ParametricSql) Condition
 	EqAny(sqlable ParametricSql) Condition
 	EqAll(sqlable ParametricSql) Condition
@@ -68,13 +37,15 @@ type SetComparable[T any] interface {
 	LtAll(sqlable ParametricSql) Condition
 	LeAny(sqlable ParametricSql) Condition
 	LeAll(sqlable ParametricSql) Condition
+	IsNull() Condition
+	IsNotNull() Condition
 }
 
 type Column interface {
 	Name() string
 	Table() Table
 
-	//As(x string) Column
+	As(x string) Column
 	Alias() *string
 
 	Asc() SortColumn
@@ -82,6 +53,10 @@ type Column interface {
 
 	getType() colTypeTag
 	getRef() string
+
+	SQLable
+	Comparable
+	SetComparable
 }
 
 type ParametricSql interface {
@@ -98,6 +73,7 @@ const (
 	float32Tag = colTypeTag("float32")
 	stringTag  = colTypeTag("string")
 	boolTag    = colTypeTag("bool")
+	anyTag     = colTypeTag("any")
 )
 
 type Col[T any] struct {
@@ -105,40 +81,41 @@ type Col[T any] struct {
 	table        Table
 	concreteType colTypeTag
 	alias        *string
-	Comparable[T]
+	ComparableParam[T]
 }
 
-func (c Col[T]) SQL() (string, []any) {
-	sql, params := c.sqlWithParams(nil)
-	return sql, params.ToSlice()
+func (c Col[T]) SQL() (sql string, params []any) {
+	sql, paramsMap := c.sqlWithParams(nil)
+	return sql, paramsMap.ToSlice()
 }
 
-func (c Col[T]) sqlWithParams(_ ParamsMap) (string, ParamsMap) {
+func (c Col[T]) sqlWithParams(params ParamsMap) (string, ParamsMap) {
 	colRef := c.getRef()
 	if c.Alias() != nil {
 		colRef += " AS " + *c.Alias()
 	}
-	return colRef, ParamsMap{}
+	return colRef, params
 }
 
-var _ Column = &Col[int]{}
-var _ ParametricSql = &Col[int]{} // Ensure Col implements ParametricSql
+var (
+	_ Column        = &Col[any]{}
+	_ ParametricSql = &Col[int]{} // Ensure Col implements ParametricSql
+)
 
 func (c Col[T]) Alias() *string {
 	return c.alias
 }
 
-func (c Col[T]) AsNamedSubQuery(x string) SQLable {
-	return c.As(x)
-}
-
-func (c Col[T]) AsSubQuery() SQLable {
-	return newWithOptionalAlias(c, nil)
-}
-
-func (c Col[T]) As(x string) SQLable {
+func (c Col[T]) As(x string) Column {
 	c.alias = &x
 	return c
+}
+
+func (c Col[T]) ToSorted(direction SortDirection) SortColumn {
+	return &SortCol[T]{
+		col:       c,
+		direction: direction,
+	}
 }
 
 func (c Col[T]) Asc() SortColumn {
@@ -157,7 +134,7 @@ func (c Col[T]) Desc() SortColumn {
 
 func (c Col[T]) getRef() string {
 	if c.Table() == nil {
-		//this is the case for "*"
+		// this is the case for "*"
 		return c.Name()
 	}
 
@@ -179,6 +156,10 @@ func (s *SortCol[T]) Name() string {
 	return s.col.Name()
 }
 
+func (s *SortCol[T]) Column() Column {
+	return s.col
+}
+
 func (s *SortCol[T]) Table() Table {
 	return s.col.Table()
 }
@@ -195,7 +176,7 @@ func (s *SortCol[T]) SQL() string {
 	return s.getRef() + " " + string(s.direction)
 }
 
-func newCol[T any](name string, table Table) *Col[T] {
+func NewCol[T any](name string, table Table) *Col[T] {
 	var emptyT T
 	var tag colTypeTag
 	switch any(emptyT).(type) {
@@ -214,7 +195,7 @@ func newCol[T any](name string, table Table) *Col[T] {
 	case bool:
 		tag = boolTag
 	default:
-		panic("unknown type")
+		tag = anyTag
 	}
 
 	return &Col[T]{
@@ -227,9 +208,25 @@ func newCol[T any](name string, table Table) *Col[T] {
 func (c Col[T]) Name() string {
 	return c.name
 }
+
 func (c Col[T]) Table() Table {
 	return c.table
 }
+
 func (c Col[T]) getType() colTypeTag {
 	return c.concreteType
+}
+
+type Number interface {
+	~int | ~int32 | ~int64 | ~float32 | ~float64
+}
+
+func NewFixedCol[T string | Number](val T, alias *string) Column {
+	valStr := fmt.Sprintf("%v", val)
+	var col Column = NewCol[T](valStr, nil)
+	if alias != nil {
+		col = col.As(*alias)
+	}
+
+	return col
 }

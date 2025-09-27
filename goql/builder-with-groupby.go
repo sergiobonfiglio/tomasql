@@ -30,7 +30,7 @@ func (b *builderWithGroupBy) OrderBy(first SortColumn, columns ...SortColumn) Bu
 	return newBuilderWithOrderBy(b, append([]SortColumn{first}, columns...))
 }
 
-func (b *builderWithGroupBy) SQL() (string, []any) {
+func (b *builderWithGroupBy) SQL() (sql string, params []any) {
 	sql, paramsMap := b.sqlWithParams(b.params)
 	return sql, paramsMap.ToSlice()
 }
@@ -55,7 +55,7 @@ func (b *builderWithGroupBy) sqlWithParams(paramsMap ParamsMap) (string, ParamsM
 	return sql + " GROUP BY " + strings.Join(groupBySql, ", ") + havingSql, b.params
 }
 
-func (b *builderWithGroupBy) AsNamedSubQuery(alias string) SQLable {
+func (b *builderWithGroupBy) AsNamedSubQuery(alias string) Table {
 	return newWithOptionalAlias(b, &alias)
 }
 

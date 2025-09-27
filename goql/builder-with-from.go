@@ -6,14 +6,31 @@ type builderWithFrom struct {
 	params    ParamsMap
 }
 
-var _ BuilderWithFrom = &builderWithFrom{}
+var _ BuilderWithTables = &builderWithFrom{}
 
-func newBuilderWithFrom(prev ParametricSql, from ParametricSql) BuilderWithFrom {
+func newBuilderWithFrom(prev, from ParametricSql) BuilderWithTables {
 	b := &builderWithFrom{
 		prevStage: prev,
 		fromTable: from,
 	}
 
+	return b
+}
+
+func (b *builderWithFrom) Joins(joinItems ...*JoinItem) BuilderWithTables {
+	return _addJoins(b, joinItems...)
+}
+
+func _addJoins(b BuilderWithTables, joinItems ...*JoinItem) BuilderWithTables {
+	if len(joinItems) == 0 {
+		return b
+	}
+	for _, joinItem := range joinItems {
+		if joinItem == nil {
+			continue
+		}
+		b = b.Join(joinItem.Target).On(joinItem.OnCondition)
+	}
 	return b
 }
 
@@ -41,7 +58,8 @@ func (b *builderWithFrom) GroupBy(column ParametricSql, columns ...ParametricSql
 func (b *builderWithFrom) OrderBy(column SortColumn, columns ...SortColumn) BuilderWithOrderBy {
 	return newBuilderWithOrderBy(b, append([]SortColumn{column}, columns...))
 }
-func (b *builderWithFrom) AsNamedSubQuery(alias string) SQLable {
+
+func (b *builderWithFrom) AsNamedSubQuery(alias string) Table {
 	return newWithOptionalAlias(b, &alias)
 }
 
@@ -51,15 +69,16 @@ func (b *builderWithFrom) AsSubQuery() SQLable {
 
 func (b *builderWithFrom) sqlWithParams(params ParamsMap) (string, ParamsMap) {
 	b.params = params.AddAll(b.params)
-	sql, params := b.prevStage.sqlWithParams(b.params)
+	var sql string
+	sql, b.params = b.prevStage.sqlWithParams(b.params)
 
 	var sqlTable string
-	sqlTable, params = b.fromTable.sqlWithParams(params)
+	sqlTable, b.params = b.fromTable.sqlWithParams(b.params)
 
-	return sql + " FROM " + sqlTable, params
+	return sql + " FROM " + sqlTable, b.params
 }
 
-func (b *builderWithFrom) SQL() (string, []any) {
-	sql, params := b.sqlWithParams(b.params)
-	return sql, params.ToSlice()
+func (b *builderWithFrom) SQL() (sql string, params []any) {
+	sql, paramsMap := b.sqlWithParams(b.params)
+	return sql, paramsMap.ToSlice()
 }

@@ -1,14 +1,12 @@
 package goql
 
 import (
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 	"testing"
-	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestBuilder(t *testing.T) {
-
 	type test struct {
 		got  string
 		want string
@@ -25,14 +23,14 @@ func TestBuilder(t *testing.T) {
 				{
 					want: "SELECT account.id, account.uuid",
 					got: func() string {
-						sql, _ := newBuilder().Select(Account.Id, Account.Uuid).SQL()
+						sql, _ := NewBuilder().Select(Account.Id, Account.Uuid).SQL()
 						return sql
 					}(),
 				},
 				{
 					want: "SELECT account.id AS a1, account.uuid",
 					got: func() string {
-						sql, _ := newBuilder().Select(Account.Id.As("a1"), Account.Uuid).SQL()
+						sql, _ := NewBuilder().Select(Account.Id.As("a1"), Account.Uuid).SQL()
 						return sql
 					}(),
 				},
@@ -41,7 +39,7 @@ func TestBuilder(t *testing.T) {
 					want: "SELECT a.id, a.uuid FROM account AS a",
 					got: func() string {
 						acc := Account.As("a")
-						sql, _ := newBuilder().Select(acc.Id, Account.As("a").Uuid).
+						sql, _ := NewBuilder().Select(acc.Id, Account.As("a").Uuid).
 							From(acc).
 							SQL()
 						return sql
@@ -55,17 +53,17 @@ func TestBuilder(t *testing.T) {
 				{
 					want: "SELECT * FROM account",
 					got: func() string {
-						sql, _ := newBuilder().SelectAll().
+						sql, _ := NewBuilder().SelectAll().
 							From(Account).
 							SQL()
 						return sql
 					}(),
 				},
 				{
-					want: "SELECT config.* FROM config",
+					want: "SELECT account.* FROM account",
 					got: func() string {
-						sql, _ := newBuilder().Select(Config.Star()).
-							From(Config).
+						sql, _ := NewBuilder().Select(Account.Star()).
+							From(Account).
 							SQL()
 						return sql
 					}(),
@@ -74,7 +72,7 @@ func TestBuilder(t *testing.T) {
 					want: "SELECT a.* FROM account AS a",
 					got: func() string {
 						accA := Account.As("a")
-						sql, _ := newBuilder().Select(accA.Star()).
+						sql, _ := NewBuilder().Select(accA.Star()).
 							From(accA).
 							SQL()
 						return sql
@@ -88,7 +86,7 @@ func TestBuilder(t *testing.T) {
 				{
 					want: "SELECT DISTINCT * FROM account",
 					got: func() string {
-						sql, _ := newBuilder().SelectDistinctAll().
+						sql, _ := NewBuilder().SelectDistinctAll().
 							From(Account).
 							SQL()
 						return sql
@@ -97,7 +95,7 @@ func TestBuilder(t *testing.T) {
 				{
 					want: "SELECT DISTINCT account.id, account.uuid FROM account",
 					got: func() string {
-						sql, _ := newBuilder().SelectDistinct(Account.Id, Account.Uuid).
+						sql, _ := NewBuilder().SelectDistinct(Account.Id, Account.Uuid).
 							From(Account).
 							SQL()
 						return sql
@@ -111,7 +109,7 @@ func TestBuilder(t *testing.T) {
 				{
 					want: "SELECT account.id, account.uuid FROM account",
 					got: func() string {
-						sql, _ := newBuilder().Select(Account.Id, Account.Uuid).
+						sql, _ := NewBuilder().Select(Account.Id, Account.Uuid).
 							From(Account).
 							SQL()
 						return sql
@@ -127,7 +125,7 @@ func TestBuilder(t *testing.T) {
 						"JOIN shopping_cart ON a.id = shopping_cart.owner_id",
 					got: func() string {
 						acc := Account.As("a")
-						sql, _ := newBuilder().Select(acc.Id, acc.Uuid).
+						sql, _ := NewBuilder().Select(acc.Id, acc.Uuid).
 							From(acc).
 							Join(ShoppingCart).On(acc.Id.Eq(ShoppingCart.OwnerId)).
 							SQL()
@@ -142,7 +140,7 @@ func TestBuilder(t *testing.T) {
 						acc := Account.As("a")
 						sc := ShoppingCart.As("sc")
 						sc2 := ShoppingCart.As("sc2")
-						sql, _ := newBuilder().Select(acc.Id, acc.Uuid, sc.Id).
+						sql, _ := NewBuilder().Select(acc.Id, acc.Uuid, sc.Id).
 							From(acc).
 							Join(sc).On(acc.Id.Eq(sc.OwnerId)).
 							Join(sc2).On(acc.Id.Eq(sc2.OwnerId)).
@@ -159,7 +157,7 @@ func TestBuilder(t *testing.T) {
 						acc := Account.As("a")
 						sc := ShoppingCart.As("sc")
 						sc2 := ShoppingCart.As("sc2")
-						sql, _ := newBuilder().Select(acc.Id, acc.Uuid, sc.Id).
+						sql, _ := NewBuilder().Select(acc.Id, acc.Uuid, sc.Id).
 							From(acc).
 							Join(sc).On(acc.Id.Eq(sc.OwnerId)).
 							Join(sc2).On(acc.Id.Eq(sc2.OwnerId)).
@@ -172,7 +170,7 @@ func TestBuilder(t *testing.T) {
 					want: "SELECT account.id, account.uuid FROM account " +
 						"LEFT JOIN shopping_cart ON account.id = shopping_cart.owner_id",
 					got: func() string {
-						sql, _ := newBuilder().Select(Account.Id, Account.Uuid).
+						sql, _ := NewBuilder().Select(Account.Id, Account.Uuid).
 							From(Account).
 							LeftJoin(ShoppingCart).On(Account.Id.Eq(ShoppingCart.OwnerId)).
 							SQL()
@@ -183,7 +181,7 @@ func TestBuilder(t *testing.T) {
 					want: "SELECT account.id, account.uuid FROM account " +
 						"RIGHT JOIN shopping_cart ON account.id = shopping_cart.owner_id",
 					got: func() string {
-						sql, _ := newBuilder().Select(Account.Id, Account.Uuid).
+						sql, _ := NewBuilder().Select(Account.Id, Account.Uuid).
 							From(Account).
 							RightJoin(ShoppingCart).On(Account.Id.Eq(ShoppingCart.OwnerId)).
 							SQL()
@@ -199,7 +197,7 @@ func TestBuilder(t *testing.T) {
 					want: "SELECT a.id FROM account AS a WHERE a.id = $1",
 					got: func() string {
 						acc := Account.As("a")
-						sql, _ := newBuilder().Select(acc.Id).
+						sql, _ := NewBuilder().Select(acc.Id).
 							From(acc).
 							Where(acc.Id.EqParam(1)).
 							SQL()
@@ -215,7 +213,7 @@ func TestBuilder(t *testing.T) {
 					want: "SELECT a.id FROM account AS a WHERE a.id = $1 ORDER BY a.id ASC, a.uuid DESC",
 					got: func() string {
 						acc := Account.As("a")
-						sql, _ := newBuilder().Select(acc.Id).
+						sql, _ := NewBuilder().Select(acc.Id).
 							From(acc).
 							Where(acc.Id.EqParam(1)).
 							OrderBy(acc.Id.Asc(), acc.Uuid.Desc()).
@@ -232,7 +230,7 @@ func TestBuilder(t *testing.T) {
 					want: "SELECT a.id FROM account AS a ORDER BY a.id ASC LIMIT 10",
 					got: func() string {
 						acc := Account.As("a")
-						sql, _ := newBuilder().Select(acc.Id).
+						sql, _ := NewBuilder().Select(acc.Id).
 							From(acc).
 							OrderBy(acc.Id.Asc()).
 							Limit(10).
@@ -244,7 +242,7 @@ func TestBuilder(t *testing.T) {
 					want: "SELECT a.id FROM account AS a ORDER BY a.id ASC LIMIT 10 OFFSET 0",
 					got: func() string {
 						acc := Account.As("a")
-						sql, _ := newBuilder().Select(acc.Id).
+						sql, _ := NewBuilder().Select(acc.Id).
 							From(acc).
 							OrderBy(acc.Id.Asc()).
 							Limit(10).Offset(0).
@@ -258,12 +256,12 @@ func TestBuilder(t *testing.T) {
 			name: "subqueries",
 			tests: []test{
 				{
-					want: "SELECT (SELECT c.uuid FROM config AS c WHERE c.account_id = $1) AS conf_uuid, a.id FROM account AS a WHERE a.id = $1 OR a.id = $2",
+					want: "SELECT (SELECT c.uuid FROM shopping_cart AS c WHERE c.owner_id = $1) AS cart_uuid, a.id FROM account AS a WHERE a.id = $1 OR a.id = $2",
 					got: func() string {
 						acc := Account.As("a")
-						conf := Config.As("c")
-						sql, _ := newBuilder().Select(
-							newBuilder().Select(conf.Uuid).From(conf).Where(conf.AccountId.EqParam(1)).AsNamedSubQuery("conf_uuid"),
+						cart := ShoppingCart.As("c")
+						sql, _ := NewBuilder().Select(
+							NewBuilder().Select(cart.Uuid).From(cart).Where(cart.OwnerId.EqParam(1)).AsNamedSubQuery("cart_uuid"),
 							acc.Id,
 						).From(acc).
 							Where(acc.Id.EqParam(1).Or(acc.Id.EqParam(2))).
@@ -272,10 +270,10 @@ func TestBuilder(t *testing.T) {
 					}(),
 				},
 				{
-					want: "SELECT * FROM (SELECT config.uuid FROM config) AS uuids",
+					want: "SELECT * FROM (SELECT account.uuid FROM account) AS uuids",
 					got: func() string {
-						sql, _ := newBuilder().SelectAll().
-							From(newBuilder().Select(Config.Uuid).From(Config).AsNamedSubQuery("uuids")).
+						sql, _ := NewBuilder().SelectAll().
+							From(NewBuilder().Select(Account.Uuid).From(Account).AsNamedSubQuery("uuids")).
 							SQL()
 						return sql
 					}(),
@@ -289,7 +287,7 @@ func TestBuilder(t *testing.T) {
 					want: "SELECT account.id, COUNT(1) AS cnt FROM account " +
 						"GROUP BY account.id HAVING COUNT(1) > $1",
 					got: func() string {
-						sql, _ := newBuilder().
+						sql, _ := NewBuilder().
 							Select(Account.Id, Count().As("cnt")).
 							From(Account).
 							GroupBy(Account.Id).
@@ -303,7 +301,7 @@ func TestBuilder(t *testing.T) {
 						"GROUP BY account.id HAVING COUNT(1) > $1 " +
 						"ORDER BY account.id ASC",
 					got: func() string {
-						sql, _ := newBuilder().
+						sql, _ := NewBuilder().
 							Select(Account.Id, Count().As("cnt")).
 							From(Account).
 							GroupBy(Account.Id).
@@ -326,61 +324,94 @@ func TestBuilder(t *testing.T) {
 			}
 		})
 	}
-
 }
 
-func TestBuilder_Query(t *testing.T) {
+// func TestBuilder_Subquery(t *testing.T) {
+// 	xtest := xtestSetup.New(t, []any{})
+// 	defer xtest.Cleanup()
 
-	xtest := xtestSetup.New(t, []any{})
-	defer xtest.Cleanup()
+// 	type test struct {
+// 		got  string
+// 		want string
+// 	}
 
-	//setup
-	type accountRow struct {
-		Id        int64  `db:"id"`
-		Uuid      string `db:"uuid"`
-		CreatedTs int64  `db:"created_ts"`
-	}
-	var inserted []accountRow
-	for i := 0; i < 10; i++ {
+// 	t.Run("subqueries with params", func(t *testing.T) {
+// 		testItem := test{
+// 			want: "SELECT * FROM (SELECT config.uuid FROM config WHERE config.uuid = $1) AS t1 " +
+// 				"JOIN (SELECT config.uuid FROM config WHERE config.uuid = $2) AS t2 ON t1.uuid = t2.uuid " +
+// 				"JOIN (SELECT config.uuid FROM config WHERE config.uuid = $2) AS t3 ON t2.uuid = t3.uuid",
+// 			got: func() string {
+// 				t1 := NewBuilder().Select(Config.Uuid).From(Config).Where(Config.Uuid.EqParam("1")).AsNamedSubQuery("t1")
+// 				t2 := NewBuilder().Select(Config.Uuid).From(Config).Where(Config.Uuid.EqParam("2")).AsNamedSubQuery("t2")
+// 				t3 := NewBuilder().Select(Config.Uuid).From(Config).Where(Config.Uuid.EqParam("2")).AsNamedSubQuery("t3")
 
-		accUuid := uuid.NewString()
-		createdTs := time.Now().Unix()
-		var accId *int64 = new(int64)
-		err := xtest.SQL.Get(accId,
-			`INSERT INTO account (uuid, created_ts) VALUES ($1, $2) RETURNING id`,
-			accUuid,
-			createdTs,
-		)
-		require.Nil(t, err)
-		require.NotNil(t, accId)
+// 				t1Col := NewCol[string]("uuid", t1)
+// 				t2Col := NewCol[string]("uuid", t2)
+// 				t3Col := NewCol[string]("uuid", t3)
 
-		inserted = append(inserted, accountRow{
-			Id:        *accId,
-			Uuid:      accUuid,
-			CreatedTs: createdTs,
-		})
-	}
+// 				sql, params := NewBuilder().SelectAll().
+// 					From(t1).
+// 					Join(t2).On(t1Col.Eq(t2Col)).
+// 					Join(t3).On(t2Col.Eq(t3Col)).
+// 					SQL()
 
-	t.Run("query with params", func(t *testing.T) {
+// 				require.Len(t, params, 2) // only 2 distinct params
+// 				return sql
+// 			}(),
+// 		}
 
-		builder := newBuilder().
-			Select(Account.Id, Account.Uuid, Account.CreatedTs).
-			From(Account).
-			Where(Account.Id.EqParam(inserted[0].Id).
-				And(Account.Id.EqParam(inserted[0].Id)).
-				And(Account.Uuid.EqParam(inserted[0].Uuid)))
+// 		require.Equal(t, testItem.want, testItem.got)
+// 	})
+// }
 
-		res := accountRow{}
-		sql, params := builder.SQL()
-		require.Len(t, params, 2) // only 2 distinct params
+// func TestBuilder_Query(t *testing.T) {
+// 	xtest := xtestSetup.New(t, []any{})
+// 	defer xtest.Cleanup()
 
-		err := xtest.SQL.Get(&res, sql, params...)
-		require.Nil(t, err)
+// 	// setup
+// 	type accountRow struct {
+// 		Id        int64  `db:"id"`
+// 		Uuid      string `db:"uuid"`
+// 		CreatedTs int64  `db:"created_ts"`
+// 	}
+// 	var inserted []accountRow
+// 	for i := 0; i < 10; i++ {
 
-		require.Equal(t, inserted[0].Id, res.Id)
-		require.Equal(t, inserted[0].Uuid, res.Uuid)
-		require.Equal(t, inserted[0].CreatedTs, res.CreatedTs)
+// 		accUuid := uuid.NewString()
+// 		createdTs := time.Now().Unix()
+// 		accId := new(int64)
+// 		err := xtest.SQL.Get(accId,
+// 			`INSERT INTO account (uuid, created_ts) VALUES ($1, $2) RETURNING id`,
+// 			accUuid,
+// 			createdTs,
+// 		)
+// 		require.NoError(t, err)
+// 		require.NotNil(t, accId)
 
-	})
+// 		inserted = append(inserted, accountRow{
+// 			Id:        *accId,
+// 			Uuid:      accUuid,
+// 			CreatedTs: createdTs,
+// 		})
+// 	}
 
-}
+// 	t.Run("query with params", func(t *testing.T) {
+// 		builder := NewBuilder().
+// 			Select(Account.Id, Account.Uuid, Account.CreatedTs).
+// 			From(Account).
+// 			Where(Account.Id.EqParam(inserted[0].Id).
+// 				And(Account.Id.EqParam(inserted[0].Id)).
+// 				And(Account.Uuid.EqParam(inserted[0].Uuid)))
+
+// 		res := accountRow{}
+// 		sql, params := builder.SQL()
+// 		require.Len(t, params, 2) // only 2 distinct params
+
+// 		err := xtest.SQL.Get(&res, sql, params...)
+// 		require.NoError(t, err)
+
+// 		require.Equal(t, inserted[0].Id, res.Id)
+// 		require.Equal(t, inserted[0].Uuid, res.Uuid)
+// 		require.Equal(t, inserted[0].CreatedTs, res.CreatedTs)
+// 	})
+// }

@@ -13,19 +13,22 @@ type builderWithOrderBy struct {
 	params    ParamsMap
 }
 
-var _ BuilderWithOrderBy = &builderWithOrderBy{}
-var _ BuilderWithLimit = &builderWithOrderBy{}
+var (
+	_ BuilderWithOrderBy = &builderWithOrderBy{}
+	_ BuilderWithLimit   = &builderWithOrderBy{}
+)
 
 func newBuilderWithOrderBy(prev ParametricSql, orderBy []SortColumn) BuilderWithOrderBy {
 	b := &builderWithOrderBy{
 		prevStage: prev,
 		orderBy:   orderBy,
+		params:    ParamsMap{},
 	}
 
 	return b
 }
 
-func (b *builderWithOrderBy) AsNamedSubQuery(alias string) SQLable {
+func (b *builderWithOrderBy) AsNamedSubQuery(alias string) Table {
 	return newWithOptionalAlias(b, &alias)
 }
 
@@ -45,7 +48,8 @@ func (b *builderWithOrderBy) Offset(i int) SQLable {
 
 func (b *builderWithOrderBy) sqlWithParams(params ParamsMap) (string, ParamsMap) {
 	b.params = params.AddAll(b.params)
-	out, params := b.prevStage.sqlWithParams(b.params)
+	var out string
+	out, b.params = b.prevStage.sqlWithParams(b.params)
 
 	if len(b.orderBy) > 0 {
 		out += " ORDER BY "
@@ -64,10 +68,10 @@ func (b *builderWithOrderBy) sqlWithParams(params ParamsMap) (string, ParamsMap)
 		out += fmt.Sprintf(" OFFSET %d", *b.offset)
 	}
 
-	return out, params
+	return out, b.params
 }
 
-func (b *builderWithOrderBy) SQL() (string, []any) {
-	sql, params := b.sqlWithParams(b.params)
-	return sql, params.ToSlice()
+func (b *builderWithOrderBy) SQL() (sql string, params []any) {
+	sql, paramsMap := b.sqlWithParams(b.params)
+	return sql, paramsMap.ToSlice()
 }

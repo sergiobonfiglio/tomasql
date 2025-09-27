@@ -8,14 +8,16 @@ type builderWithJoin struct {
 	params    ParamsMap
 }
 
-var _ BuilderWithJoin = &builderWithJoin{}
-var _ BuilderWithOn = &builderWithJoin{}
+var (
+	_ BuilderWithJoin   = &builderWithJoin{}
+	_ BuilderWithTables = &builderWithJoin{}
+)
 
 func newBuilderWithJoin(prev ParametricSql, joinType JoinType, joinTable Table) BuilderWithJoin {
 	params := ParamsMap{}
 	var joins []*joinDef
 	if joinTable != nil {
-		joins = append(joins, newJoinDef(joinType, joinTable, nil, params))
+		joins = append(joins, newJoinDef(joinType, joinTable, nil))
 	}
 	b := &builderWithJoin{
 		prevStage: prev,
@@ -25,7 +27,7 @@ func newBuilderWithJoin(prev ParametricSql, joinType JoinType, joinTable Table) 
 	return b
 }
 
-func (b *builderWithJoin) AsNamedSubQuery(alias string) SQLable {
+func (b *builderWithJoin) AsNamedSubQuery(alias string) Table {
 	return newWithOptionalAlias(b, &alias)
 }
 
@@ -33,7 +35,7 @@ func (b *builderWithJoin) AsSubQuery() SQLable {
 	return newWithOptionalAlias(b, nil)
 }
 
-func (b *builderWithJoin) On(condition Condition) BuilderWithOn {
+func (b *builderWithJoin) On(condition Condition) BuilderWithTables {
 	lastJoin := b.joins[len(b.joins)-1]
 	lastJoin.joinCondition = condition
 	return b
@@ -41,7 +43,7 @@ func (b *builderWithJoin) On(condition Condition) BuilderWithOn {
 
 func (b *builderWithJoin) _join(joinType JoinType, t Table) BuilderWithJoin {
 	if t != nil {
-		b.joins = append(b.joins, newJoinDef(joinType, t, nil, b.params))
+		b.joins = append(b.joins, newJoinDef(joinType, t, nil))
 	}
 	return b
 }
@@ -58,6 +60,10 @@ func (b *builderWithJoin) RightJoin(t Table) BuilderWithJoin {
 	return b._join(RightJoin, t)
 }
 
+func (b *builderWithJoin) Joins(joinItems ...*JoinItem) BuilderWithTables {
+	return _addJoins(b, joinItems...)
+}
+
 func (b *builderWithJoin) Where(cond Condition) BuilderWithWhere {
 	return newBuilderWithWhere(b, cond)
 }
@@ -71,23 +77,25 @@ func (b *builderWithJoin) OrderBy(column SortColumn, columns ...SortColumn) Buil
 }
 
 func (b *builderWithJoin) sqlWithParams(params ParamsMap) (string, ParamsMap) {
-
 	b.params = params.AddAll(b.params)
 
-	out, params := b.prevStage.sqlWithParams(b.params)
+	var out string
+	out, b.params = b.prevStage.sqlWithParams(b.params)
 
 	if len(b.joins) > 0 {
 		var joinStr []string
 		for _, join := range b.joins {
-			joinStr = append(joinStr, join.SQL())
+			var jstr string
+			jstr, b.params = join.sqlWithParams(b.params)
+			joinStr = append(joinStr, jstr)
 		}
 		join := strings.Join(joinStr, " ")
 		out += " " + join
 	}
-	return out, params
+	return out, b.params
 }
 
-func (b *builderWithJoin) SQL() (string, []any) {
-	sql, params := b.sqlWithParams(b.params)
-	return sql, params.ToSlice()
+func (b *builderWithJoin) SQL() (sql string, params []any) {
+	sql, paramsMap := b.sqlWithParams(b.params)
+	return sql, paramsMap.ToSlice()
 }
