@@ -2,13 +2,19 @@
 
 package {{.Package}}
 
+{{- if eq (GoqlImportMode) "full" }}
+import "github.com/sergiobonfiglio/goql"
+{{- else if eq (GoqlImportMode) "dot" }}
+import . "github.com/sergiobonfiglio/goql"
+{{- end }}
+
 // dbRelationships is a map representing the relationships between tables in the database,
 // indexed by source table, target table, source column -> target column.
-var dbRelationships = map[Table]map[Table]map[Column]Column{
+var dbRelationships = map[{{GoqlPrefix}}Table]map[{{GoqlPrefix}}Table]map[{{GoqlPrefix}}Column]{{GoqlPrefix}}Column{
 {{- range $fromTable, $fk := .Links }}
 	{{ $fromTable }}: {
 		{{- range $toTable, $fromCols := $fk }}
-		{{ $toTable }}: map[Column]Column{
+		{{ $toTable }}: map[{{GoqlPrefix}}Column]{{GoqlPrefix}}Column{
 			{{- range $fromCol, $link := $fromCols }}
 			{{ $fromTable }}.{{ $fromCol }}: {{ $link.ToTable }}.{{ $link.ToColumn }},
 			{{- end }}

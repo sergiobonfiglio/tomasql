@@ -1,3 +1,33 @@
+// Package goql provides a type-safe SQL query builder for Go.
+//
+// GoQL allows you to build complex SQL queries using a fluent API with compile-time type checking.
+// It supports SELECT, JOINs, WHERE conditions, subqueries, aggregations, and more.
+//
+// Basic usage:
+//
+//	// Create columns
+//	userID := goql.NewCol[int]("id", nil)
+//	userName := goql.NewCol[string]("name", nil)
+//
+//	// Build query
+//	query := goql.NewBuilder().
+//		SelectCols(userID, userName).
+//		From(usersTable).
+//		Where(userID.GtParam(100))
+//
+//	// Generate SQL
+//	sql, params := query.SQL()
+//
+// The library provides type safety by associating Go types with database columns,
+// ensuring that comparisons and operations are performed with compatible types.
+//
+// Key features:
+//   - Type-safe column definitions and operations
+//   - Fluent query building API
+//   - Support for complex JOINs and subqueries
+//   - Built-in SQL functions (COUNT, SUM, AVG, etc.)
+//   - Parameterized queries to prevent SQL injection
+//   - Code generation for database schema integration
 package goql
 
 type builder1 struct{}

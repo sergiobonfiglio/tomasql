@@ -7,8 +7,6 @@ import (
 	"strings"
 )
 
-var DBGraph = newDBGraphData(dbRelationships)
-
 // DBGraphData represents a directed graph of database tables and their relationships.
 // Note that this graph only contains 'forward' relationships, i.e. from the table that has a foreign key
 // to the table that is referenced by the foreign key.
@@ -24,8 +22,8 @@ func newDBGraphData(relationships map[Table]map[Table]map[Column]Column) *DBGrap
 	}
 }
 
-func NewDBGraphData() *DBGraphData {
-	return newDBGraphData(dbRelationships)
+func NewDBGraphData(relationships map[Table]map[Table]map[Column]Column) *DBGraphData {
+	return newDBGraphData(relationships)
 }
 
 func (g *DBGraphData) getNeighbors(table Table) []Table {

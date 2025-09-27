@@ -6,6 +6,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+
+//go:generate go run ../cmd/table-def-gen --schema ../cmd/table-def-gen/example_schema.sql --package-dir ../goql --table-def-file tables-definitions_test.gen.go --table-graph-file= --goql-import-mode none
+
+
 func TestBuilder(t *testing.T) {
 	type test struct {
 		got  string

@@ -1,15 +1,19 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
+	"flag"
 	"fmt"
+	"go/format"
 	"html/template"
 	"log"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -17,43 +21,88 @@ import (
 
 	"github.com/docker/go-connections/nat"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq" // Add this line for PostgreSQL driver
+	_ "github.com/lib/pq" // PostgreSQL driver
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
 
-//go:generate go run .
-
 func main() {
+	// Flags
+	packageDirFlag := flag.String("package-dir", "", "Target package directory where generated files will be written (required)")
+	schemaPathFlag := flag.String("schema", "", "Path to SQL schema file (required)")
+	// Optional flags
+	packageNameFlag := flag.String("package-name", "", "Override the package name in generated files (default: use directory name)")
+	tableDefFileFlag := flag.String("table-def-file", "table-definitions.gen.go", "Name of the generated table definitions file (default: table-definitions.gen.go)")
+	tableGraphFileFlag := flag.String("table-graph-file", "tables-graph.gen.go", "Name of the generated tables graph file (default: tables-graph.gen.go). If empty, the graph file will not be generated.")
+	goqlImportModeFlag := flag.String("goql-import-mode", "full", "How to import goql package: 'full' (goql.Type), 'dot' (. import), 'none' (no import)")
+	postgresImageFlag := flag.String("postgres-image", "postgres:latest", "Postgres image to use for tables generation (default: postgres:latest)")
+
+	flag.Parse()
+
+	if *packageDirFlag == "" || *schemaPathFlag == "" {
+		flag.Usage()
+		log.Fatal("--package-dir and --schema are required")
+	}
+
+	packageDir := *packageDirFlag
+	schemaPath := *schemaPathFlag
+	packageName := *packageNameFlag
+	tableDefFile := *tableDefFileFlag
+	tableGraphFile := *tableGraphFileFlag
+	goqlImportMode := *goqlImportModeFlag
+	dockerImage := *postgresImageFlag
+
+	// Use provided package name or default to directory name
+	pkgName := packageName
+	if pkgName == "" {
+		pkgName = filepath.Base(packageDir)
+	}
+
 	// Get the directory of the current Go source file
 	_, filename, _, _ := runtime.Caller(0)
 	dir := filepath.Dir(filename)
 
-	pkgName := "goql"
-	packageDir := filepath.Join(dir, "..", "..", pkgName)
-
-	tmpl, err := template.ParseFiles(filepath.Join(dir, "table-def.tmpl"))
+	tmpl, err := template.New("table-def.tmpl").Funcs(template.FuncMap{
+		"GoqlImportMode": func() string { return goqlImportMode },
+		"GoqlPrefix": func() string {
+			switch goqlImportMode {
+			case "full":
+				return "goql."
+			case "dot", "none":
+				return ""
+			default:
+				return "goql."
+			}
+		},
+	}).ParseFiles(filepath.Join(dir, "table-def.tmpl"))
 	if err != nil {
 		panic(err)
 	}
 
-	closeFile := func(outputFile *os.File) {
-		err := outputFile.Close()
+	// Helper function to execute template and format the output
+	executeAndFormat := func(tmpl *template.Template, data interface{}, outputPath string) error {
+		// Execute template to a buffer first
+		var buf bytes.Buffer
+		err := tmpl.Execute(&buf, data)
 		if err != nil {
-			panic(err)
+			return err
 		}
+
+		// Format the generated code
+		formatted, err := format.Source(buf.Bytes())
+		if err != nil {
+			// If formatting fails, use the unformatted version
+			log.Printf("Warning: failed to format %s: %v", outputPath, err)
+			formatted = buf.Bytes()
+		}
+
+		// Write to file
+		return os.WriteFile(outputPath, formatted, 0644)
 	}
 
-	outPath := filepath.Clean(filepath.Join(packageDir, "table-definitions.gen.go"))
-	outputFile, err := os.Create(outPath)
-	if err != nil {
-		panic(err)
-	}
-	defer closeFile(outputFile)
-
-	container, err := SetupTestContainer(nil)
+	container, err := SetupTestContainer(nil, schemaPath, dockerImage)
 	if err != nil {
 		panic(err)
 	}
@@ -63,35 +112,46 @@ func main() {
 		panic(err)
 	}
 
-	err = tmpl.Execute(outputFile, tableDefData)
+	outPath := filepath.Clean(filepath.Join(packageDir, tableDefFile))
+	err = executeAndFormat(tmpl, tableDefData, outPath)
 	if err != nil {
 		panic(err)
 	}
-	log.Println("Generated table definitions")
+	log.Println("Generated and formatted table definitions")
 
-	// Generate graph definitions
-	tmplGraph, err := template.ParseFiles(filepath.Join(dir, "tables-graph.tmpl"))
-	if err != nil {
-		panic(err)
-	}
+	// Generate graph definitions if tableGraphFile is not empty
+	if tableGraphFile != "" {
+		tmplGraph, err := template.New("tables-graph.tmpl").Funcs(template.FuncMap{
+			"GoqlImportMode": func() string { return goqlImportMode },
+			"GoqlPrefix": func() string {
+				switch goqlImportMode {
+				case "full":
+					return "goql."
+				case "dot", "none":
+					return ""
+				default:
+					return "goql."
+				}
+			},
+		}).ParseFiles(filepath.Join(dir, "tables-graph.tmpl"))
+		if err != nil {
+			panic(err)
+		}
 
-	outGraphPath := filepath.Clean(filepath.Join(packageDir, "tables-graph.gen.go"))
-	outputGraphFile, err := os.Create(outGraphPath)
-	if err != nil {
-		panic(err)
-	}
+		dbGraphData, err := getDbGraphFromTestDB(container, pkgName)
+		if err != nil {
+			panic(err)
+		}
 
-	defer closeFile(outputGraphFile)
-
-	dbGraphData, err := getDbGraphFromTestDB(container, pkgName)
-	if err != nil {
-		panic(err)
+		outGraphPath := filepath.Clean(filepath.Join(packageDir, tableGraphFile))
+		err = executeAndFormat(tmplGraph, dbGraphData, outGraphPath)
+		if err != nil {
+			panic(err)
+		}
+		log.Println("Generated and formatted table graph")
+	} else {
+		log.Println("Skipping table graph generation as --table-graph-file is empty")
 	}
-	err = tmplGraph.Execute(outputGraphFile, dbGraphData)
-	if err != nil {
-		panic(err)
-	}
-	log.Println("Generated table graph")
 }
 
 func getTableDefinitionFromTestDB(container *sqlx.DB, pkgName string) (*TemplateData, error) {
@@ -136,6 +196,7 @@ ORDER BY 1, 2
 	}
 
 	data := &TemplateData{Package: pkgName}
+	importsSet := map[string]struct{}{}
 	var currTable *Table
 	for _, item := range result {
 		if currTable == nil || currTable.SqlName != item.TableName {
@@ -147,13 +208,25 @@ ORDER BY 1, 2
 			data.Tables = append(data.Tables, currTable)
 		}
 		// TODO: constants for enums?
+		mappedType := psqlTypeToGo(item.BaseType)
+		if idx := strings.Index(mappedType, "."); idx > 0 { // pkg.Type pattern
+			pkgPart := mappedType[:idx]
+			importsSet[pkgPart] = struct{}{}
+		}
 		column := Column{
 			Name:    snakeToCamel(item.ColumnName),
 			SqlName: item.ColumnName,
-			Type:    psqlTypeToGo(item.BaseType),
+			Type:    mappedType,
 		}
 
 		currTable.Columns = append(currTable.Columns, column)
+	}
+
+	if len(importsSet) > 0 {
+		for k := range importsSet {
+			data.Imports = append(data.Imports, k)
+		}
+		slices.Sort(data.Imports)
 	}
 
 	return data, nil
@@ -183,6 +256,15 @@ func psqlTypeToGo(psqlType string) string {
 		return "string"
 	case "varchar":
 		return "string"
+	case "numeric":
+		// numeric/decimal: defaulting to float64; consider using a fixed-point/decimal type if precision is critical
+		return "float64"
+	case "timestamp":
+		return "time.Time"
+	case "timestamptz":
+		return "time.Time"
+	case "date":
+		return "time.Time"
 
 	default:
 		panic("Unknown type: " + psqlType)
@@ -200,6 +282,7 @@ func snakeToCamel(name string) string {
 type TemplateData struct {
 	Package string
 	Tables  []*Table
+	Imports []string
 }
 
 type Table struct {
@@ -289,7 +372,7 @@ type Link struct {
 	ToColumn   string
 }
 
-func SetupTestContainer(tt *testing.T) (*sqlx.DB, error) {
+func SetupTestContainer(tt *testing.T, schemaPath string, dockerImage string) (*sqlx.DB, error) {
 
 	// we also use this function outside of tests
 	logFn := log.Printf
@@ -297,16 +380,14 @@ func SetupTestContainer(tt *testing.T) (*sqlx.DB, error) {
 		logFn = tt.Logf
 	}
 
-	// in case creating testcontainers is stuck, purge all testcontainers instances running `make purge-testcontainers`
 	ctx := context.Background()
 	containerName := "postgis-testcontainer"
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "public.ecr.aws/bigprofiles/postgres-postgis:15.1.0",
+			Image:        dockerImage,
 			ExposedPorts: []string{"5432/tcp"},
 			WaitingFor:   wait.ForLog("database system is ready to accept connections"),
-			// necessary to reuse container
-			Name: containerName,
+			Name:         containerName,
 			Env: map[string]string{
 				"POSTGRES_USER":     "postgres",
 				"POSTGRES_PASSWORD": "postgres",
@@ -354,7 +435,7 @@ func SetupTestContainer(tt *testing.T) (*sqlx.DB, error) {
 	nw := time.Now()
 	tm := nw.Format("2006_01_02__15_04_05")
 	randDbName := "testcontainer_" + strconv.Itoa(int(nw.UnixMilli())) + "_" + strings.ToLower(tm) + "_" + createRandString(16)
-	schema := readDbSchema()
+	schema := readDbSchema(schemaPath)
 
 	_, err = rootDB.Exec("create database " + randDbName)
 	if err != nil {
@@ -378,14 +459,13 @@ func SetupTestContainer(tt *testing.T) (*sqlx.DB, error) {
 	return db, nil
 }
 
-func readDbSchema() string {
-	_, b, _, _ := runtime.Caller(0)
-	basepath := filepath.Dir(b)
-
-	sqlSchema := filepath.Join(basepath, "example_schema.sql")
-	content, err := os.ReadFile(sqlSchema)
+func readDbSchema(schemaPath string) string {
+	if schemaPath == "" {
+		log.Fatal("schema path must not be empty")
+	}
+	content, err := os.ReadFile(schemaPath)
 	if err != nil {
-		panic(fmt.Sprintf("failed to read sql schema: %s", err))
+		panic(fmt.Sprintf("failed to read sql schema '%s': %s", schemaPath, err))
 	}
 
 	return string(content)

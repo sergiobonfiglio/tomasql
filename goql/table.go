@@ -15,8 +15,16 @@ type sqlableTable struct {
 	table Table
 }
 
+// SqlableTable is the exported version of sqlableTable for use in generated code
+type SqlableTable = sqlableTable
+
 func newSqlableTable(t Table) *sqlableTable {
 	return &sqlableTable{table: t}
+}
+
+// NewSqlableTable creates a new sqlable table wrapper - exported for use in generated code
+func NewSqlableTable(t Table) *sqlableTable {
+	return newSqlableTable(t)
 }
 
 func (s *sqlableTable) SQL() (sql string, params []any) {
