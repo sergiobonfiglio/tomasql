@@ -1,4 +1,4 @@
-package goql
+package tomasql
 
 type builderWithWhere struct {
 	prevStage ParametricSql

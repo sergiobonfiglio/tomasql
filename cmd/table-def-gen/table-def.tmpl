@@ -5,9 +5,9 @@ package {{.Package}}
 {{- if or .Imports (ne (GoqlImportMode) "none") }}
 import (
 	{{- if eq (GoqlImportMode) "full" }}
-	"github.com/sergiobonfiglio/goql"
+	"github.com/sergiobonfiglio/tomasql"
 	{{- else if eq (GoqlImportMode) "dot" }}
-	. "github.com/sergiobonfiglio/goql"
+	. "github.com/sergiobonfiglio/tomasql"
 	{{- end }}
 	{{- range .Imports }}
 	"{{ . }}"

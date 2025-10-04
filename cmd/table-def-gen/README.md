@@ -12,7 +12,7 @@ The generator creates Go code that provides compile-time type safety for your da
 2. Run the generator:
 
 ```bash
-go run github.com/sergiobonfiglio/goql/cmd/table-def-gen --schema ./path/to/your/schema.sql --package-dir ./path/to/your/package --package-name yourpkg
+go run github.com/sergiobonfiglio/tomasql/cmd/table-def-gen --schema ./path/to/your/schema.sql --package-dir ./path/to/your/package --package-name yourpkg
 ```
 
 ### Generated Code Example
@@ -56,7 +56,7 @@ func (u *UsersTableDef) As(alias string) *UsersTableDef {
 ### Usage with GoQL
 
 ```go
-import "github.com/sergiobonfiglio/goql"
+import "github.com/sergiobonfiglio/tomasql"
 
 // Use generated table definitions
 query := goql.NewBuilder().
@@ -86,7 +86,7 @@ The generator currently supports PostgreSQL databases and uses the following par
 #### Example
 
 ```bash
-go run github.com/sergiobonfiglio/goql/cmd/table-def-gen \
+go run github.com/sergiobonfiglio/tomasql/cmd/table-def-gen \
     --schema ./schema.sql \
     --package-dir ./example-app \
     --package-name exampleapp \

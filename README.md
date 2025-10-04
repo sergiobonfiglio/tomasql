@@ -1,7 +1,7 @@
 # GoQL - Type-safe SQL Query Builder for Go
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/sergiobonfiglio/goql.svg)](https://pkg.go.dev/github.com/sergiobonfiglio/goql)
-[![Go Report Card](https://goreportcard.com/badge/github.com/sergiobonfiglio/goql)](https://goreportcard.com/report/github.com/sergiobonfiglio/goql)
+[![Go Reference](https://pkg.go.dev/badge/github.com/sergiobonfiglio/tomasql.svg)](https://pkg.go.dev/github.com/sergiobonfiglio/tomasql)
+[![Go Report Card](https://goreportcard.com/badge/github.com/sergiobonfiglio/tomasql)](https://goreportcard.com/report/github.com/sergiobonfiglio/tomasql)
 
 GoQL is a type-safe SQL query builder for Go that provides a fluent API for constructing SQL queries with compile-time type checking and excellent IDE support.
 
@@ -16,7 +16,7 @@ GoQL is a type-safe SQL query builder for Go that provides a fluent API for cons
 ## Installation
 
 ```bash
-go get github.com/sergiobonfiglio/goql
+go get github.com/sergiobonfiglio/tomasql
 ```
 
 ## Quick Start
@@ -30,18 +30,18 @@ There are two ways to use GoQL:
 
 1. Install the library and code generation tool:
    ```bash
-   go get github.com/sergiobonfiglio/goql
+   go get github.com/sergiobonfiglio/tomasql
    ```
 
 2. Generate table definitions from your schema directly through the command line:
    ```bash
    # First create your schema.sql file with your database schema
-   go run github.com/sergiobonfiglio/goql/cmd/table-def-gen --schema ./schema.sql --package-dir . --package-name main
+   go run github.com/sergiobonfiglio/tomasql/cmd/table-def-gen --schema ./schema.sql --package-dir . --package-name main
 
    ```
    or a go:generate comment in your main.go file:
    ```go
-   //go:generate go run github.com/sergiobonfiglio/goql/cmd/table-def-gen --schema ./schema.sql --package-dir . --package-name main
+   //go:generate go run github.com/sergiobonfiglio/tomasql/cmd/table-def-gen --schema ./schema.sql --package-dir . --package-name main
    ```
 
 3. Use the generated tables:
@@ -50,7 +50,7 @@ There are two ways to use GoQL:
 
    import (
        "fmt"
-       "github.com/sergiobonfiglio/goql"
+       "github.com/sergiobonfiglio/tomasql"
    )
 
    func main() {
@@ -79,7 +79,7 @@ package main
 
 import (
     "fmt"
-    "github.com/sergiobonfiglio/goql"
+    "github.com/sergiobonfiglio/tomasql"
 )
 
 func main() {
@@ -128,7 +128,7 @@ sql, params := query.SQL()
 ### Using Functions and Aggregations
 
 ```go
-import "github.com/sergiobonfiglio/goql"
+import "github.com/sergiobonfiglio/tomasql"
 
 // Count users by status
 query := goql.NewBuilder().
@@ -225,7 +225,7 @@ GoQL includes a code generation tool to create type-safe table definitions from 
 2. **Generate table definitions**:
    ```bash
    # Install the code generation tool
-   go install github.com/sergiobonfiglio/goql/cmd/table-def-gen@latest
+   go install github.com/sergiobonfiglio/tomasql/cmd/table-def-gen@latest
    
    # Generate table definitions (customize for your database)
    table-def-gen -schema schema.sql -output tables.go

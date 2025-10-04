@@ -3,9 +3,9 @@
 package {{.Package}}
 
 {{- if eq (GoqlImportMode) "full" }}
-import "github.com/sergiobonfiglio/goql"
+import "github.com/sergiobonfiglio/tomasql"
 {{- else if eq (GoqlImportMode) "dot" }}
-import . "github.com/sergiobonfiglio/goql"
+import . "github.com/sergiobonfiglio/tomasql"
 {{- end }}
 
 // dbRelationships is a map representing the relationships between tables in the database,

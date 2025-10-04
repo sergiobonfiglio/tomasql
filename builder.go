@@ -1,4 +1,4 @@
-// Package goql provides a type-safe SQL query builder for Go.
+// package tomasql provides a type-safe SQL query builder for Go.
 //
 // GoQL allows you to build complex SQL queries using a fluent API with compile-time type checking.
 // It supports SELECT, JOINs, WHERE conditions, subqueries, aggregations, and more.
@@ -28,7 +28,7 @@
 //   - Built-in SQL functions (COUNT, SUM, AVG, etc.)
 //   - Parameterized queries to prevent SQL injection
 //   - Code generation for database schema integration
-package goql
+package tomasql
 
 type builder1 struct{}
 

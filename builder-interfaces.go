@@ -1,4 +1,4 @@
-package goql
+package tomasql
 
 type Builder1 interface {
 	// SelectCols selects distinct columns from the table. Equivalent to SelectDistinct but avoids

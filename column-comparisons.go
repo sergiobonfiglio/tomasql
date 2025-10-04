@@ -1,4 +1,4 @@
-package goql
+package tomasql
 
 var _ ComparableParam[int] = Col[int]{}
 

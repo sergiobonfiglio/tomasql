@@ -3,30 +3,30 @@
 package main
 
 import (
-	"github.com/sergiobonfiglio/goql"
+	"github.com/sergiobonfiglio/tomasql"
 	"time"
 )
 
 type CategoriesTableDef struct {
-	*goql.SqlableTable
+	*tomasql.SqlableTable
 	alias       *string
-	CreatedAt   *goql.Col[time.Time]
-	Description *goql.Col[string]
-	Id          *goql.Col[int]
-	Name        *goql.Col[string]
-	ParentId    *goql.Col[int]
+	CreatedAt   *tomasql.Col[time.Time]
+	Description *tomasql.Col[string]
+	Id          *tomasql.Col[int]
+	Name        *tomasql.Col[string]
+	ParentId    *tomasql.Col[int]
 }
 
-var _ goql.Table = &CategoriesTableDef{}
+var _ tomasql.Table = &CategoriesTableDef{}
 
 func newCategoriesTable() *CategoriesTableDef {
 	tDef := &CategoriesTableDef{}
-	tDef.CreatedAt = goql.NewCol[time.Time]("created_at", tDef)
-	tDef.Description = goql.NewCol[string]("description", tDef)
-	tDef.Id = goql.NewCol[int]("id", tDef)
-	tDef.Name = goql.NewCol[string]("name", tDef)
-	tDef.ParentId = goql.NewCol[int]("parent_id", tDef)
-	tDef.SqlableTable = goql.NewSqlableTable(tDef)
+	tDef.CreatedAt = tomasql.NewCol[time.Time]("created_at", tDef)
+	tDef.Description = tomasql.NewCol[string]("description", tDef)
+	tDef.Id = tomasql.NewCol[int]("id", tDef)
+	tDef.Name = tomasql.NewCol[string]("name", tDef)
+	tDef.ParentId = tomasql.NewCol[int]("parent_id", tDef)
+	tDef.SqlableTable = tomasql.NewSqlableTable(tDef)
 	return tDef
 }
 
@@ -46,30 +46,30 @@ func (a *CategoriesTableDef) As(x string) *CategoriesTableDef {
 	return newT
 }
 
-func (a *CategoriesTableDef) Star() goql.ParametricSql {
-	return goql.NewCol[string]("*", a)
+func (a *CategoriesTableDef) Star() tomasql.ParametricSql {
+	return tomasql.NewCol[string]("*", a)
 }
 
 type OrderItemsTableDef struct {
-	*goql.SqlableTable
+	*tomasql.SqlableTable
 	alias     *string
-	Id        *goql.Col[int]
-	OrderId   *goql.Col[int]
-	Price     *goql.Col[float64]
-	ProductId *goql.Col[int]
-	Quantity  *goql.Col[int]
+	Id        *tomasql.Col[int]
+	OrderId   *tomasql.Col[int]
+	Price     *tomasql.Col[float64]
+	ProductId *tomasql.Col[int]
+	Quantity  *tomasql.Col[int]
 }
 
-var _ goql.Table = &OrderItemsTableDef{}
+var _ tomasql.Table = &OrderItemsTableDef{}
 
 func newOrderItemsTable() *OrderItemsTableDef {
 	tDef := &OrderItemsTableDef{}
-	tDef.Id = goql.NewCol[int]("id", tDef)
-	tDef.OrderId = goql.NewCol[int]("order_id", tDef)
-	tDef.Price = goql.NewCol[float64]("price", tDef)
-	tDef.ProductId = goql.NewCol[int]("product_id", tDef)
-	tDef.Quantity = goql.NewCol[int]("quantity", tDef)
-	tDef.SqlableTable = goql.NewSqlableTable(tDef)
+	tDef.Id = tomasql.NewCol[int]("id", tDef)
+	tDef.OrderId = tomasql.NewCol[int]("order_id", tDef)
+	tDef.Price = tomasql.NewCol[float64]("price", tDef)
+	tDef.ProductId = tomasql.NewCol[int]("product_id", tDef)
+	tDef.Quantity = tomasql.NewCol[int]("quantity", tDef)
+	tDef.SqlableTable = tomasql.NewSqlableTable(tDef)
 	return tDef
 }
 
@@ -89,32 +89,32 @@ func (a *OrderItemsTableDef) As(x string) *OrderItemsTableDef {
 	return newT
 }
 
-func (a *OrderItemsTableDef) Star() goql.ParametricSql {
-	return goql.NewCol[string]("*", a)
+func (a *OrderItemsTableDef) Star() tomasql.ParametricSql {
+	return tomasql.NewCol[string]("*", a)
 }
 
 type OrdersTableDef struct {
-	*goql.SqlableTable
+	*tomasql.SqlableTable
 	alias       *string
-	CreatedAt   *goql.Col[time.Time]
-	Id          *goql.Col[int]
-	Status      *goql.Col[string]
-	TotalAmount *goql.Col[float64]
-	UpdatedAt   *goql.Col[time.Time]
-	UserId      *goql.Col[int]
+	CreatedAt   *tomasql.Col[time.Time]
+	Id          *tomasql.Col[int]
+	Status      *tomasql.Col[string]
+	TotalAmount *tomasql.Col[float64]
+	UpdatedAt   *tomasql.Col[time.Time]
+	UserId      *tomasql.Col[int]
 }
 
-var _ goql.Table = &OrdersTableDef{}
+var _ tomasql.Table = &OrdersTableDef{}
 
 func newOrdersTable() *OrdersTableDef {
 	tDef := &OrdersTableDef{}
-	tDef.CreatedAt = goql.NewCol[time.Time]("created_at", tDef)
-	tDef.Id = goql.NewCol[int]("id", tDef)
-	tDef.Status = goql.NewCol[string]("status", tDef)
-	tDef.TotalAmount = goql.NewCol[float64]("total_amount", tDef)
-	tDef.UpdatedAt = goql.NewCol[time.Time]("updated_at", tDef)
-	tDef.UserId = goql.NewCol[int]("user_id", tDef)
-	tDef.SqlableTable = goql.NewSqlableTable(tDef)
+	tDef.CreatedAt = tomasql.NewCol[time.Time]("created_at", tDef)
+	tDef.Id = tomasql.NewCol[int]("id", tDef)
+	tDef.Status = tomasql.NewCol[string]("status", tDef)
+	tDef.TotalAmount = tomasql.NewCol[float64]("total_amount", tDef)
+	tDef.UpdatedAt = tomasql.NewCol[time.Time]("updated_at", tDef)
+	tDef.UserId = tomasql.NewCol[int]("user_id", tDef)
+	tDef.SqlableTable = tomasql.NewSqlableTable(tDef)
 	return tDef
 }
 
@@ -134,36 +134,36 @@ func (a *OrdersTableDef) As(x string) *OrdersTableDef {
 	return newT
 }
 
-func (a *OrdersTableDef) Star() goql.ParametricSql {
-	return goql.NewCol[string]("*", a)
+func (a *OrdersTableDef) Star() tomasql.ParametricSql {
+	return tomasql.NewCol[string]("*", a)
 }
 
 type ProductsTableDef struct {
-	*goql.SqlableTable
+	*tomasql.SqlableTable
 	alias         *string
-	CategoryId    *goql.Col[int]
-	CreatedAt     *goql.Col[time.Time]
-	Description   *goql.Col[string]
-	Id            *goql.Col[int]
-	Name          *goql.Col[string]
-	Price         *goql.Col[float64]
-	StockQuantity *goql.Col[int]
-	UpdatedAt     *goql.Col[time.Time]
+	CategoryId    *tomasql.Col[int]
+	CreatedAt     *tomasql.Col[time.Time]
+	Description   *tomasql.Col[string]
+	Id            *tomasql.Col[int]
+	Name          *tomasql.Col[string]
+	Price         *tomasql.Col[float64]
+	StockQuantity *tomasql.Col[int]
+	UpdatedAt     *tomasql.Col[time.Time]
 }
 
-var _ goql.Table = &ProductsTableDef{}
+var _ tomasql.Table = &ProductsTableDef{}
 
 func newProductsTable() *ProductsTableDef {
 	tDef := &ProductsTableDef{}
-	tDef.CategoryId = goql.NewCol[int]("category_id", tDef)
-	tDef.CreatedAt = goql.NewCol[time.Time]("created_at", tDef)
-	tDef.Description = goql.NewCol[string]("description", tDef)
-	tDef.Id = goql.NewCol[int]("id", tDef)
-	tDef.Name = goql.NewCol[string]("name", tDef)
-	tDef.Price = goql.NewCol[float64]("price", tDef)
-	tDef.StockQuantity = goql.NewCol[int]("stock_quantity", tDef)
-	tDef.UpdatedAt = goql.NewCol[time.Time]("updated_at", tDef)
-	tDef.SqlableTable = goql.NewSqlableTable(tDef)
+	tDef.CategoryId = tomasql.NewCol[int]("category_id", tDef)
+	tDef.CreatedAt = tomasql.NewCol[time.Time]("created_at", tDef)
+	tDef.Description = tomasql.NewCol[string]("description", tDef)
+	tDef.Id = tomasql.NewCol[int]("id", tDef)
+	tDef.Name = tomasql.NewCol[string]("name", tDef)
+	tDef.Price = tomasql.NewCol[float64]("price", tDef)
+	tDef.StockQuantity = tomasql.NewCol[int]("stock_quantity", tDef)
+	tDef.UpdatedAt = tomasql.NewCol[time.Time]("updated_at", tDef)
+	tDef.SqlableTable = tomasql.NewSqlableTable(tDef)
 	return tDef
 }
 
@@ -183,32 +183,32 @@ func (a *ProductsTableDef) As(x string) *ProductsTableDef {
 	return newT
 }
 
-func (a *ProductsTableDef) Star() goql.ParametricSql {
-	return goql.NewCol[string]("*", a)
+func (a *ProductsTableDef) Star() tomasql.ParametricSql {
+	return tomasql.NewCol[string]("*", a)
 }
 
 type UsersTableDef struct {
-	*goql.SqlableTable
+	*tomasql.SqlableTable
 	alias     *string
-	CreatedAt *goql.Col[time.Time]
-	Email     *goql.Col[string]
-	Id        *goql.Col[int]
-	IsActive  *goql.Col[bool]
-	Name      *goql.Col[string]
-	UpdatedAt *goql.Col[time.Time]
+	CreatedAt *tomasql.Col[time.Time]
+	Email     *tomasql.Col[string]
+	Id        *tomasql.Col[int]
+	IsActive  *tomasql.Col[bool]
+	Name      *tomasql.Col[string]
+	UpdatedAt *tomasql.Col[time.Time]
 }
 
-var _ goql.Table = &UsersTableDef{}
+var _ tomasql.Table = &UsersTableDef{}
 
 func newUsersTable() *UsersTableDef {
 	tDef := &UsersTableDef{}
-	tDef.CreatedAt = goql.NewCol[time.Time]("created_at", tDef)
-	tDef.Email = goql.NewCol[string]("email", tDef)
-	tDef.Id = goql.NewCol[int]("id", tDef)
-	tDef.IsActive = goql.NewCol[bool]("is_active", tDef)
-	tDef.Name = goql.NewCol[string]("name", tDef)
-	tDef.UpdatedAt = goql.NewCol[time.Time]("updated_at", tDef)
-	tDef.SqlableTable = goql.NewSqlableTable(tDef)
+	tDef.CreatedAt = tomasql.NewCol[time.Time]("created_at", tDef)
+	tDef.Email = tomasql.NewCol[string]("email", tDef)
+	tDef.Id = tomasql.NewCol[int]("id", tDef)
+	tDef.IsActive = tomasql.NewCol[bool]("is_active", tDef)
+	tDef.Name = tomasql.NewCol[string]("name", tDef)
+	tDef.UpdatedAt = tomasql.NewCol[time.Time]("updated_at", tDef)
+	tDef.SqlableTable = tomasql.NewSqlableTable(tDef)
 	return tDef
 }
 
@@ -228,6 +228,6 @@ func (a *UsersTableDef) As(x string) *UsersTableDef {
 	return newT
 }
 
-func (a *UsersTableDef) Star() goql.ParametricSql {
-	return goql.NewCol[string]("*", a)
+func (a *UsersTableDef) Star() tomasql.ParametricSql {
+	return tomasql.NewCol[string]("*", a)
 }

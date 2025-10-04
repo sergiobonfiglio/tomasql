@@ -1,4 +1,4 @@
-module github.com/sergiobonfiglio/goql
+module github.com/sergiobonfiglio/tomasql
 
 go 1.23
 

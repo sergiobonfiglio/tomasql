@@ -2,46 +2,46 @@
 
 package main
 
-import "github.com/sergiobonfiglio/goql"
+import "github.com/sergiobonfiglio/tomasql"
 
 // dbRelationships is a map representing the relationships between tables in the database,
 // indexed by source table, target table, source column -> target column.
-var dbRelationships = map[goql.Table]map[goql.Table]map[goql.Column]goql.Column{
+var dbRelationships = map[tomasql.Table]map[tomasql.Table]map[tomasql.Column]tomasql.Column{
 	Categories: {
-		Categories: map[goql.Column]goql.Column{
+		Categories: map[tomasql.Column]tomasql.Column{
 			Categories.Id:       Categories.ParentId,
 			Categories.ParentId: Categories.Id,
 		},
-		Products: map[goql.Column]goql.Column{
+		Products: map[tomasql.Column]tomasql.Column{
 			Categories.Id: Products.CategoryId,
 		},
 	},
 	OrderItems: {
-		Orders: map[goql.Column]goql.Column{
+		Orders: map[tomasql.Column]tomasql.Column{
 			OrderItems.OrderId: Orders.Id,
 		},
-		Products: map[goql.Column]goql.Column{
+		Products: map[tomasql.Column]tomasql.Column{
 			OrderItems.ProductId: Products.Id,
 		},
 	},
 	Orders: {
-		OrderItems: map[goql.Column]goql.Column{
+		OrderItems: map[tomasql.Column]tomasql.Column{
 			Orders.Id: OrderItems.OrderId,
 		},
-		Users: map[goql.Column]goql.Column{
+		Users: map[tomasql.Column]tomasql.Column{
 			Orders.UserId: Users.Id,
 		},
 	},
 	Products: {
-		Categories: map[goql.Column]goql.Column{
+		Categories: map[tomasql.Column]tomasql.Column{
 			Products.CategoryId: Categories.Id,
 		},
-		OrderItems: map[goql.Column]goql.Column{
+		OrderItems: map[tomasql.Column]tomasql.Column{
 			Products.Id: OrderItems.ProductId,
 		},
 	},
 	Users: {
-		Orders: map[goql.Column]goql.Column{
+		Orders: map[tomasql.Column]tomasql.Column{
 			Users.Id: Orders.UserId,
 		},
 	},

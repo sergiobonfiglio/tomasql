@@ -1,4 +1,4 @@
-package goql
+package tomasql
 
 type JoinType string
 

@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/sergiobonfiglio/goql"
+	"github.com/sergiobonfiglio/tomasql"
 )
 
-//go:generate go run github.com/sergiobonfiglio/goql/cmd/table-def-gen --schema ./schema.sql --package-dir . --package-name main
+//go:generate go run github.com/sergiobonfiglio/tomasql/cmd/table-def-gen --schema ./schema.sql --package-dir . --package-name main
 
 func main() {
 	fmt.Println("GoQL Test Application")
@@ -14,7 +14,7 @@ func main() {
 
 	// Example 1: Simple SELECT query
 	fmt.Println("\n--- Example 1: Basic SELECT ---")
-	sql, params := goql.NewBuilder().
+	sql, params := tomasql.NewBuilder().
 		Select(Users.Id, Users.Name, Users.Email).
 		SQL()
 	fmt.Printf("SQL: %s\n", sql)
@@ -22,7 +22,7 @@ func main() {
 
 	// Example 2: SELECT with FROM
 	fmt.Println("\n--- Example 2: SELECT with FROM ---")
-	sql, params = goql.NewBuilder().
+	sql, params = tomasql.NewBuilder().
 		Select(Users.Id, Users.Name, Users.Email).
 		From(Users).
 		SQL()
@@ -31,7 +31,7 @@ func main() {
 
 	// Example 3: SELECT with WHERE
 	fmt.Println("\n--- Example 3: SELECT with WHERE ---")
-	sql, params = goql.NewBuilder().
+	sql, params = tomasql.NewBuilder().
 		Select(Users.Id, Users.Name, Users.Email).
 		From(Users).
 		Where(Users.IsActive.EqParam(true)).
@@ -41,7 +41,7 @@ func main() {
 
 	// Example 4: JOIN query
 	fmt.Println("\n--- Example 4: JOIN query ---")
-	sql, params = goql.NewBuilder().
+	sql, params = tomasql.NewBuilder().
 		Select(Users.Name, Orders.Id.As("order_id"), Orders.TotalAmount).
 		From(Users).
 		Join(Orders).On(Users.Id.Eq(Orders.UserId)).
@@ -56,7 +56,7 @@ func main() {
 	o := Orders.As("o")
 	p := Products.As("p")
 
-	sql, params = goql.NewBuilder().
+	sql, params = tomasql.NewBuilder().
 		Select(u.Name.As("customer_name"), o.Id.As("order_id"), p.Name.As("product_name")).
 		From(u).
 		Join(o).On(u.Id.Eq(o.UserId)).
@@ -69,8 +69,8 @@ func main() {
 
 	// Example 6: Simple aggregation query
 	fmt.Println("\n--- Example 6: Aggregation query ---")
-	sql, params = goql.NewBuilder().
-		Select(Users.Name, goql.Count().As("order_count")).
+	sql, params = tomasql.NewBuilder().
+		Select(Users.Name, tomasql.Count().As("order_count")).
 		From(Users).
 		LeftJoin(Orders).On(Users.Id.Eq(Orders.UserId)).
 		Where(Users.IsActive.EqParam(true)).

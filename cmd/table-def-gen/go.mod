@@ -1,4 +1,4 @@
-module github.com/sergiobonfiglio/goql/cmd/table-def-gen
+module github.com/sergiobonfiglio/tomasql/cmd/table-def-gen
 
 go 1.23
 

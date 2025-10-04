@@ -29,7 +29,7 @@ go generate ./...
 The `table-definitions.gen.go` file contains type-safe table definitions that correspond to the database schema. They are generated using the table-def-gen tool:
 
 ```bash
-go run github.com/sergiobonfiglio/goql/cmd/table-def-gen --schema ./schema.sql --package-dir . --package-name main
+go run github.com/sergiobonfiglio/tomasql/cmd/table-def-gen --schema ./schema.sql --package-dir . --package-name main
 ```
 
 ## Example Queries
