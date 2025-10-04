@@ -1,4 +1,4 @@
--- Sample schema for testing GoQL library
+-- Sample schema for testing TomaSQL library
 -- This demonstrates a simple e-commerce structure
 
 CREATE TABLE users (

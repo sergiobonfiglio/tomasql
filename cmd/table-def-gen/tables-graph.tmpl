@@ -2,19 +2,19 @@
 
 package {{.Package}}
 
-{{- if eq (GoqlImportMode) "full" }}
+{{- if eq (TomasqlImportMode) "full" }}
 import "github.com/sergiobonfiglio/tomasql"
-{{- else if eq (GoqlImportMode) "dot" }}
+{{- else if eq (TomasqlImportMode) "dot" }}
 import . "github.com/sergiobonfiglio/tomasql"
 {{- end }}
 
 // dbRelationships is a map representing the relationships between tables in the database,
 // indexed by source table, target table, source column -> target column.
-var dbRelationships = map[{{GoqlPrefix}}Table]map[{{GoqlPrefix}}Table]map[{{GoqlPrefix}}Column]{{GoqlPrefix}}Column{
+var dbRelationships = map[{{TomasqlPrefix}}Table]map[{{TomasqlPrefix}}Table]map[{{TomasqlPrefix}}Column]{{TomasqlPrefix}}Column{
 {{- range $fromTable, $fk := .Links }}
 	{{ $fromTable }}: {
 		{{- range $toTable, $fromCols := $fk }}
-		{{ $toTable }}: map[{{GoqlPrefix}}Column]{{GoqlPrefix}}Column{
+		{{ $toTable }}: map[{{TomasqlPrefix}}Column]{{TomasqlPrefix}}Column{
 			{{- range $fromCol, $link := $fromCols }}
 			{{ $fromTable }}.{{ $fromCol }}: {{ $link.ToTable }}.{{ $link.ToColumn }},
 			{{- end }}

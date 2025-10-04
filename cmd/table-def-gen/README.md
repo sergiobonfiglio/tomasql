@@ -53,13 +53,13 @@ func (u *UsersTableDef) As(alias string) *UsersTableDef {
 }
 ```
 
-### Usage with GoQL
+### Usage with TomaSQL
 
 ```go
 import "github.com/sergiobonfiglio/tomasql"
 
 // Use generated table definitions
-query := goql.NewBuilder().
+query := tomasql.NewBuilder().
     SelectCols(Users.Name, Users.Email).
     From(Users).
     Where(Users.Age.GtParam(18).And(Users.Email.IsNotNull())).
@@ -79,7 +79,7 @@ The generator currently supports PostgreSQL databases and uses the following par
 | `--package-name`     | string | No       | (directory name)           | Name of the Go package for the generated code.                                        |
 | `--table-def-file`   | string | No       | `table-definitions.gen.go` | Name of the generated table definitions file.                                         |
 | `--table-graph-file` | string | No       | `tables-graph.gen.go`      | Name of the generated tables graph file. If empty, graph file won't be generated.     |
-| `--goql-import-mode` | string | No       | `full`                     | How to import goql package: 'full' (goql.Type), 'dot' (. import), 'none' (no import). |
+| `--tomasql-import-mode` | string | No       | `full`                     | How to import tomasql package: 'full' (tomasql.Type), 'dot' (. import), 'none' (no import). |
 | `--postgres-image`   | string | No       | `postgres:latest`          | Postgres Docker image to use for tables generation.                                   |
 | `--help`             | bool   | No       | `false`                    | Show help message and exit.                                                           |
 
@@ -92,7 +92,7 @@ go run github.com/sergiobonfiglio/tomasql/cmd/table-def-gen \
     --package-name exampleapp \
     --table-def-file my-tables.gen.go \
     --table-graph-file my-graph.gen.go \
-    --goql-import-mode dot
+    --tomasql-import-mode dot
 ```
 
 ## Requirements
@@ -128,4 +128,4 @@ The generated table definitions provide:
 - **Type Safety**: Column types match your database schema
 - **Table Aliasing**: Support for table aliases in queries
 - **Column References**: Easy access to table columns
-- **Integration**: Seamless integration with GoQL query builder
+- **Integration**: Seamless integration with TomaSQL query builder

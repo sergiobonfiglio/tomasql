@@ -1,9 +1,9 @@
-# GoQL - Type-safe SQL Query Builder for Go
+# TomaSQL - Type-safe SQL Query Builder for Go
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/sergiobonfiglio/tomasql.svg)](https://pkg.go.dev/github.com/sergiobonfiglio/tomasql)
 [![Go Report Card](https://goreportcard.com/badge/github.com/sergiobonfiglio/tomasql)](https://goreportcard.com/report/github.com/sergiobonfiglio/tomasql)
 
-GoQL is a type-safe SQL query builder for Go that provides a fluent API for constructing SQL queries with compile-time type checking and excellent IDE support.
+TomaSQL is a type-safe SQL query builder for Go that provides a fluent API for constructing SQL queries with compile-time type checking and excellent IDE support.
 
 ## Features
 
@@ -21,7 +21,7 @@ go get github.com/sergiobonfiglio/tomasql
 
 ## Quick Start
 
-There are two ways to use GoQL:
+There are two ways to use TomaSQL:
 
 1. **With Code Generation (Recommended)** - Generate type-safe table definitions from your database schema
 2. **Manual Definition** - Create table and column definitions manually
@@ -55,7 +55,7 @@ There are two ways to use GoQL:
 
    func main() {
        // Use generated table definitions (Users, Products, etc.)
-       query := goql.NewBuilder().
+       query := tomasql.NewBuilder().
            Select(Users.Id, Users.Name, Users.Email).
            From(Users).
            Where(Users.IsActive.EqParam(true)).
@@ -84,12 +84,12 @@ import (
 
 func main() {
     // Create columns manually
-    userID := goql.NewCol[int]("id", nil)
-    userName := goql.NewCol[string]("name", nil) 
-    userEmail := goql.NewCol[string]("email", nil)
+    userID := tomasql.NewCol[int]("id", nil)
+    userName := tomasql.NewCol[string]("name", nil) 
+    userEmail := tomasql.NewCol[string]("email", nil)
     
     // Build a query
-    query := goql.NewBuilder().
+    query := tomasql.NewBuilder().
         Select(userID, userName, userEmail).
         Where(userID.GtParam(100).And(userName.LikeParam("%john%"))).
         OrderBy(userName.Asc()).
@@ -105,16 +105,16 @@ func main() {
 
 ```go
 // Define table relationships
-usersTable := goql.NewCol[int]("users", nil)
-postsTable := goql.NewCol[int]("posts", nil)
+usersTable := tomasql.NewCol[int]("users", nil)
+postsTable := tomasql.NewCol[int]("posts", nil)
 
-userID := goql.NewCol[int]("id", usersTable)
-userName := goql.NewCol[string]("name", usersTable)
-postID := goql.NewCol[int]("id", postsTable)
-postTitle := goql.NewCol[string]("title", postsTable)
-postUserID := goql.NewCol[int]("user_id", postsTable)
+userID := tomasql.NewCol[int]("id", usersTable)
+userName := tomasql.NewCol[string]("name", usersTable)
+postID := tomasql.NewCol[int]("id", postsTable)
+postTitle := tomasql.NewCol[string]("title", postsTable)
+postUserID := tomasql.NewCol[int]("user_id", postsTable)
 
-query := goql.NewBuilder().
+query := tomasql.NewBuilder().
     SelectCols(userName, postTitle).
     From(usersTable).
     Join(postsTable).On(userID.Eq(postUserID)).
@@ -131,17 +131,17 @@ sql, params := query.SQL()
 import "github.com/sergiobonfiglio/tomasql"
 
 // Count users by status
-query := goql.NewBuilder().
+query := tomasql.NewBuilder().
     Select(
         userStatus,
-        goql.Count().As("total_users"),
-        goql.Avg[float64](userAge).As("avg_age"),
+        tomasql.Count().As("total_users"),
+        tomasql.Avg[float64](userAge).As("avg_age"),
     ).
     From(usersTable).
     Where(userStatus.InArray([]string{"active", "pending"})).
     GroupBy(userStatus).
-    Having(goql.Count().GtParam(10)).
-    OrderBy(goql.Count().Desc())
+    Having(tomasql.Count().GtParam(10)).
+    OrderBy(tomasql.Count().Desc())
 
 sql, params := query.SQL()
 ```
@@ -150,12 +150,12 @@ sql, params := query.SQL()
 
 ```go
 // Subquery example
-subQuery := goql.NewBuilder().
+subQuery := tomasql.NewBuilder().
     SelectCols(userID).
     From(usersTable).
     Where(userAge.GeParam(18))
 
-mainQuery := goql.NewBuilder().
+mainQuery := tomasql.NewBuilder().
     SelectAll().
     From(postsTable).
     Where(postUserID.In(subQuery))
@@ -172,7 +172,7 @@ condition1 := userName.LikeParam("%admin%")
 condition2 := userAge.GtParam(25).And(userStatus.EqParam("active"))
 condition3 := userEmail.IsNotNull()
 
-query := goql.NewBuilder().
+query := tomasql.NewBuilder().
     SelectAll().
     From(usersTable).
     Where(condition1.Or(condition2).And(condition3))
@@ -192,8 +192,8 @@ const (
     UserStatusInactive UserStatus = "inactive"
 )
 
-userStatus := goql.NewCol[UserStatus]("status", usersTable)
-query := goql.NewBuilder().
+userStatus := tomasql.NewCol[UserStatus]("status", usersTable)
+query := tomasql.NewBuilder().
     SelectAll().
     From(usersTable).
     Where(userStatus.EqParam(UserStatusActive))
@@ -204,14 +204,14 @@ query := goql.NewBuilder().
 ```go
 // Array operations
 userIDs := []int{1, 2, 3, 4, 5}
-query := goql.NewBuilder().
+query := tomasql.NewBuilder().
     SelectAll().
     From(usersTable).
     Where(userID.InArray(userIDs))
 
 // ANY/ALL operations with subqueries  
-subQuery := goql.NewBuilder().SelectCols(postUserID).From(postsTable)
-query2 := goql.NewBuilder().
+subQuery := tomasql.NewBuilder().SelectCols(postUserID).From(postsTable)
+query2 := tomasql.NewBuilder().
     SelectAll().
     From(usersTable).
     Where(userID.EqAny(subQuery))
@@ -219,7 +219,7 @@ query2 := goql.NewBuilder().
 
 ### Table Definition Generation
 
-GoQL includes a code generation tool to create type-safe table definitions from your database schema:
+TomaSQL includes a code generation tool to create type-safe table definitions from your database schema:
 
 1. **Create your database schema** (`schema.sql`)
 2. **Generate table definitions**:
@@ -235,18 +235,18 @@ GoQL includes a code generation tool to create type-safe table definitions from 
    ```go
    // Generated table definitions provide full type safety
    type UsersTableDef struct {
-       *goql.SqlableTable
+       *tomasql.SqlableTable
        alias     *string
-       Id        *goql.Col[int]
-       Name      *goql.Col[string]
-       Email     *goql.Col[string]
-       IsActive  *goql.Col[bool]
+       Id        *tomasql.Col[int]
+       Name      *tomasql.Col[string]
+       Email     *tomasql.Col[string]
+       IsActive  *tomasql.Col[bool]
    }
    
    var Users = newUsersTable()
    
    // Usage with generated tables
-   query := goql.NewBuilder().
+   query := tomasql.NewBuilder().
        Select(Users.Name, Users.Email).
        From(Users).
        Where(Users.IsActive.EqParam(true))
@@ -279,7 +279,7 @@ GoQL includes a code generation tool to create type-safe table definitions from 
 
 ## Example Application
 
-The repository includes a complete example application demonstrating GoQL usage:
+The repository includes a complete example application demonstrating TomaSQL usage:
 
 ```bash
 # Run the example application
@@ -290,7 +290,7 @@ The `example-app/` directory contains:
 - **`schema.sql`** - Complete PostgreSQL schema (users, products, orders, etc.)
 - **`tables-definitions_test.gen.go`** - Generated table definitions with full type safety
 - **`tables-graph.gen.go`** - Generated graph of table relationships
-- **`main.go`** - Comprehensive examples showing all GoQL features
+- **`main.go`** - Comprehensive examples showing all TomaSQL features
 - **`README.md`** - Detailed documentation
 
 ### Example App Features Demonstrated

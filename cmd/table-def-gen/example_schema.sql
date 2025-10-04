@@ -1,4 +1,4 @@
--- Sample schema for testing GoQL library
+-- Sample schema for testing TomaSQL library
 CREATE TYPE account_type AS ENUM (
     'regular',
     'premium',

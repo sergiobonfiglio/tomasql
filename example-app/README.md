@@ -1,11 +1,11 @@
-# GoQL Test Application
+# TomaSQL Test Application
 
-This is a demonstration application showing how to use the GoQL library with custom table definitions.
+This is a demonstration application showing how to use the TomaSQL library with custom table definitions.
 
 ## Structure
 
 - **`schema.sql`** - PostgreSQL schema definition
-- **`main.go`** - Example queries demonstrating various GoQL features
+- **`main.go`** - Example queries demonstrating various TomaSQL features
 - **`table-definitions.gen.go`** - Generated type-safe table definitions (see go:generate comment in main.go)
 - **`tables-graph.gen.go`** - Generated graph of table relationships (see go:generate comment in main.go)
 
@@ -52,9 +52,9 @@ The application demonstrates:
 - **Join Operations** - Relationship handling
 - **Function Support** - Built-in SQL functions
 
-## Integration with GoQL Library
+## Integration with TomaSQL Library
 
-This test application shows the recommended pattern for using GoQL:
+This test application shows the recommended pattern for using TomaSQL:
 
 1. Define your database schema in SQL
 2. Generate type-safe table definitions 

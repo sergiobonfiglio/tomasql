@@ -9,7 +9,7 @@ import (
 //go:generate go run github.com/sergiobonfiglio/tomasql/cmd/table-def-gen --schema ./schema.sql --package-dir . --package-name main
 
 func main() {
-	fmt.Println("GoQL Test Application")
+	fmt.Println("TomaSQL Test Application")
 	fmt.Println("=====================")
 
 	// Example 1: Simple SELECT query
@@ -79,7 +79,7 @@ func main() {
 	fmt.Printf("Params: %v\n", params)
 
 	fmt.Println("\n✅ All examples executed successfully!")
-	fmt.Println("\nThis demonstrates the GoQL library working with generated table definitions.")
+	fmt.Println("\nThis demonstrates the TomaSQL library working with generated table definitions.")
 	fmt.Println("In a real application, you would:")
 	fmt.Println("1. Connect to your database")
 	fmt.Println("2. Execute these queries with the generated SQL and parameters")

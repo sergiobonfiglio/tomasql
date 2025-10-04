@@ -2,11 +2,11 @@
 
 package {{.Package}}
 
-{{- if or .Imports (ne (GoqlImportMode) "none") }}
+{{- if or .Imports (ne (TomasqlImportMode) "none") }}
 import (
-	{{- if eq (GoqlImportMode) "full" }}
+	{{- if eq (TomasqlImportMode) "full" }}
 	"github.com/sergiobonfiglio/tomasql"
-	{{- else if eq (GoqlImportMode) "dot" }}
+	{{- else if eq (TomasqlImportMode) "dot" }}
 	. "github.com/sergiobonfiglio/tomasql"
 	{{- end }}
 	{{- range .Imports }}
@@ -20,21 +20,21 @@ import (
 
 {{- define "table-def" }}
 type {{ .TypeDefName }}TableDef struct {
-    *{{GoqlPrefix}}SqlableTable
+    *{{TomasqlPrefix}}SqlableTable
 	alias *string
     {{- range .Columns }}
-    {{ .Name }} *{{GoqlPrefix}}Col[{{ .Type }}]
+    {{ .Name }} *{{TomasqlPrefix}}Col[{{ .Type }}]
     {{- end }}
 }
 
-var _ {{GoqlPrefix}}Table = &{{ .TypeDefName }}TableDef{}
+var _ {{TomasqlPrefix}}Table = &{{ .TypeDefName }}TableDef{}
 
 func new{{ .TypeDefName }}Table() *{{ .TypeDefName }}TableDef {
 	tDef := &{{ .TypeDefName }}TableDef{}
 	{{- range .Columns }}
-	tDef.{{ .Name }} = {{GoqlPrefix}}NewCol[{{ .Type }}]("{{ .SqlName }}", tDef)
+	tDef.{{ .Name }} = {{TomasqlPrefix}}NewCol[{{ .Type }}]("{{ .SqlName }}", tDef)
 	{{- end }}
-	tDef.SqlableTable = {{GoqlPrefix}}NewSqlableTable(tDef)
+	tDef.SqlableTable = {{TomasqlPrefix}}NewSqlableTable(tDef)
 	return tDef
 }
 
@@ -54,8 +54,8 @@ func (a *{{ .TypeDefName }}TableDef) As(x string) *{{ .TypeDefName }}TableDef {
 	return newT
 }
 
-func (a *{{ .TypeDefName }}TableDef) Star() {{GoqlPrefix}}ParametricSql {
-	return {{GoqlPrefix}}NewCol[string]("*", a)
+func (a *{{ .TypeDefName }}TableDef) Star() {{TomasqlPrefix}}ParametricSql {
+	return {{TomasqlPrefix}}NewCol[string]("*", a)
 }
 {{- end }}
 

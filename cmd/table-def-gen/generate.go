@@ -36,7 +36,7 @@ func main() {
 	packageNameFlag := flag.String("package-name", "", "Override the package name in generated files (default: use directory name)")
 	tableDefFileFlag := flag.String("table-def-file", "table-definitions.gen.go", "Name of the generated table definitions file (default: table-definitions.gen.go)")
 	tableGraphFileFlag := flag.String("table-graph-file", "tables-graph.gen.go", "Name of the generated tables graph file (default: tables-graph.gen.go). If empty, the graph file will not be generated.")
-	goqlImportModeFlag := flag.String("goql-import-mode", "full", "How to import goql package: 'full' (goql.Type), 'dot' (. import), 'none' (no import)")
+	tomasqlImportModeFlag := flag.String("tomasql-import-mode", "full", "How to import tomasql package: 'full' (tomasql.Type), 'dot' (. import), 'none' (no import)")
 	postgresImageFlag := flag.String("postgres-image", "postgres:latest", "Postgres image to use for tables generation (default: postgres:latest)")
 
 	flag.Parse()
@@ -51,7 +51,7 @@ func main() {
 	packageName := *packageNameFlag
 	tableDefFile := *tableDefFileFlag
 	tableGraphFile := *tableGraphFileFlag
-	goqlImportMode := *goqlImportModeFlag
+	tomasqlImportMode := *tomasqlImportModeFlag
 	dockerImage := *postgresImageFlag
 
 	// Use provided package name or default to directory name
@@ -65,15 +65,15 @@ func main() {
 	dir := filepath.Dir(filename)
 
 	tmpl, err := template.New("table-def.tmpl").Funcs(template.FuncMap{
-		"GoqlImportMode": func() string { return goqlImportMode },
-		"GoqlPrefix": func() string {
-			switch goqlImportMode {
+		"TomasqlImportMode": func() string { return tomasqlImportMode },
+		"TomasqlPrefix": func() string {
+			switch tomasqlImportMode {
 			case "full":
-				return "goql."
+				return "tomasql."
 			case "dot", "none":
 				return ""
 			default:
-				return "goql."
+				return "tomasql."
 			}
 		},
 	}).ParseFiles(filepath.Join(dir, "table-def.tmpl"))
@@ -112,7 +112,7 @@ func main() {
 		panic(err)
 	}
 
-	outPath := filepath.Clean(filepath.Join(packageDir, tableDefFile))
+	outPath := filepath.Join(packageDir, tableDefFile)
 	err = executeAndFormat(tmpl, tableDefData, outPath)
 	if err != nil {
 		panic(err)
@@ -122,15 +122,15 @@ func main() {
 	// Generate graph definitions if tableGraphFile is not empty
 	if tableGraphFile != "" {
 		tmplGraph, err := template.New("tables-graph.tmpl").Funcs(template.FuncMap{
-			"GoqlImportMode": func() string { return goqlImportMode },
-			"GoqlPrefix": func() string {
-				switch goqlImportMode {
+			"TomasqlImportMode": func() string { return tomasqlImportMode },
+			"TomasqlPrefix": func() string {
+				switch tomasqlImportMode {
 				case "full":
-					return "goql."
+					return "tomasql."
 				case "dot", "none":
 					return ""
 				default:
-					return "goql."
+					return "tomasql."
 				}
 			},
 		}).ParseFiles(filepath.Join(dir, "tables-graph.tmpl"))
@@ -381,7 +381,7 @@ func SetupTestContainer(tt *testing.T, schemaPath string, dockerImage string) (*
 	}
 
 	ctx := context.Background()
-	containerName := "postgis-testcontainer"
+	containerName := "tomasql-table-def-gen-testcontainer"
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:        dockerImage,

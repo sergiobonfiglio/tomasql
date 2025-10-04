@@ -1,16 +1,16 @@
 // package tomasql provides a type-safe SQL query builder for Go.
 //
-// GoQL allows you to build complex SQL queries using a fluent API with compile-time type checking.
+// TomaSQL allows you to build complex SQL queries using a fluent API with compile-time type checking.
 // It supports SELECT, JOINs, WHERE conditions, subqueries, aggregations, and more.
 //
 // Basic usage:
 //
 //	// Create columns
-//	userID := goql.NewCol[int]("id", nil)
-//	userName := goql.NewCol[string]("name", nil)
+//	userID := tomasql.NewCol[int]("id", nil)
+//	userName := tomasql.NewCol[string]("name", nil)
 //
 //	// Build query
-//	query := goql.NewBuilder().
+//	query := tomasql.NewBuilder().
 //		SelectCols(userID, userName).
 //		From(usersTable).
 //		Where(userID.GtParam(100))
