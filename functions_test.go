@@ -28,14 +28,14 @@ func TestFuncColumn(t *testing.T) {
 		{
 			want: "EXISTS(SELECT 1)",
 			got: func() string {
-				sql, _ := Exists(NewBuilder().Select(NewFixedCol(1, nil))).sqlWithParams(ParamsMap{})
+				sql, _ := Exists(Select(NewFixedCol(1, nil))).sqlWithParams(ParamsMap{})
 				return sql
 			},
 		},
 		{
 			want: "EXISTS(SELECT 1) AS e1",
 			got: func() string {
-				sql, _ := Exists(NewBuilder().Select(NewFixedCol(1, nil))).As("e1").sqlWithParams(ParamsMap{})
+				sql, _ := Exists(Select(NewFixedCol(1, nil))).As("e1").sqlWithParams(ParamsMap{})
 				return sql
 			},
 		},

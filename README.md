@@ -55,8 +55,7 @@ There are two ways to use TomaSQL:
 
    func main() {
        // Use generated table definitions (Users, Products, etc.)
-       query := tomasql.NewBuilder().
-           Select(Users.Id, Users.Name, Users.Email).
+       query := tomasql.Select(Users.Id, Users.Name, Users.Email).
            From(Users).
            Where(Users.IsActive.EqParam(true)).
            OrderBy(Users.Name.Asc()).
@@ -89,8 +88,7 @@ func main() {
     userEmail := tomasql.NewCol[string]("email", nil)
     
     // Build a query
-    query := tomasql.NewBuilder().
-        Select(userID, userName, userEmail).
+    query := tomasql.Select(userID, userName, userEmail).
         Where(userID.GtParam(100).And(userName.LikeParam("%john%"))).
         OrderBy(userName.Asc()).
         Limit(10)
@@ -114,8 +112,7 @@ postID := tomasql.NewCol[int]("id", postsTable)
 postTitle := tomasql.NewCol[string]("title", postsTable)
 postUserID := tomasql.NewCol[int]("user_id", postsTable)
 
-query := tomasql.NewBuilder().
-    SelectCols(userName, postTitle).
+query := tomasql.SelectCols(userName, postTitle).
     From(usersTable).
     Join(postsTable).On(userID.Eq(postUserID)).
     Where(userName.IsNotNull()).
@@ -131,8 +128,7 @@ sql, params := query.SQL()
 import "github.com/sergiobonfiglio/tomasql"
 
 // Count users by status
-query := tomasql.NewBuilder().
-    Select(
+query := tomasql.Select(
         userStatus,
         tomasql.Count().As("total_users"),
         tomasql.Avg[float64](userAge).As("avg_age"),
@@ -150,13 +146,11 @@ sql, params := query.SQL()
 
 ```go
 // Subquery example
-subQuery := tomasql.NewBuilder().
-    SelectCols(userID).
+subQuery := tomasql.SelectCols(userID).
     From(usersTable).
     Where(userAge.GeParam(18))
 
-mainQuery := tomasql.NewBuilder().
-    SelectAll().
+mainQuery := tomasql.SelectAll().
     From(postsTable).
     Where(postUserID.In(subQuery))
 
@@ -172,8 +166,7 @@ condition1 := userName.LikeParam("%admin%")
 condition2 := userAge.GtParam(25).And(userStatus.EqParam("active"))
 condition3 := userEmail.IsNotNull()
 
-query := tomasql.NewBuilder().
-    SelectAll().
+query := tomasql.SelectAll().
     From(usersTable).
     Where(condition1.Or(condition2).And(condition3))
 
@@ -193,8 +186,7 @@ const (
 )
 
 userStatus := tomasql.NewCol[UserStatus]("status", usersTable)
-query := tomasql.NewBuilder().
-    SelectAll().
+query := tomasql.SelectAll().
     From(usersTable).
     Where(userStatus.EqParam(UserStatusActive))
 ```
@@ -204,15 +196,13 @@ query := tomasql.NewBuilder().
 ```go
 // Array operations
 userIDs := []int{1, 2, 3, 4, 5}
-query := tomasql.NewBuilder().
-    SelectAll().
+query := tomasql.SelectAll().
     From(usersTable).
     Where(userID.InArray(userIDs))
 
 // ANY/ALL operations with subqueries  
-subQuery := tomasql.NewBuilder().SelectCols(postUserID).From(postsTable)
-query2 := tomasql.NewBuilder().
-    SelectAll().
+subQuery := tomasql.SelectCols(postUserID).From(postsTable)
+query2 := tomasql.SelectAll().
     From(usersTable).
     Where(userID.EqAny(subQuery))
 ```
@@ -246,8 +236,7 @@ TomaSQL includes a code generation tool to create type-safe table definitions fr
    var Users = newUsersTable()
    
    // Usage with generated tables
-   query := tomasql.NewBuilder().
-       Select(Users.Name, Users.Email).
+   query := tomasql.Select(Users.Name, Users.Email).
        From(Users).
        Where(Users.IsActive.EqParam(true))
    ```
@@ -266,7 +255,6 @@ TomaSQL includes a code generation tool to create type-safe table definitions fr
 
 ### Key Functions
 
-- `NewBuilder()` - Create a new query builder
 - `NewCol[T](name, table)` - Create a typed column
 - `NewTableFromSubQuery()` - Create table from subquery
 

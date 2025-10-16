@@ -14,16 +14,14 @@ func main() {
 
 	// Example 1: Simple SELECT query
 	fmt.Println("\n--- Example 1: Basic SELECT ---")
-	sql, params := tomasql.NewBuilder().
-		Select(Users.Id, Users.Name, Users.Email).
+	sql, params := tomasql.Select(Users.Id, Users.Name, Users.Email).
 		SQL()
 	fmt.Printf("SQL: %s\n", sql)
 	fmt.Printf("Params: %v\n", params)
 
 	// Example 2: SELECT with FROM
 	fmt.Println("\n--- Example 2: SELECT with FROM ---")
-	sql, params = tomasql.NewBuilder().
-		Select(Users.Id, Users.Name, Users.Email).
+	sql, params = tomasql.Select(Users.Id, Users.Name, Users.Email).
 		From(Users).
 		SQL()
 	fmt.Printf("SQL: %s\n", sql)
@@ -31,8 +29,7 @@ func main() {
 
 	// Example 3: SELECT with WHERE
 	fmt.Println("\n--- Example 3: SELECT with WHERE ---")
-	sql, params = tomasql.NewBuilder().
-		Select(Users.Id, Users.Name, Users.Email).
+	sql, params = tomasql.Select(Users.Id, Users.Name, Users.Email).
 		From(Users).
 		Where(Users.IsActive.EqParam(true)).
 		SQL()
@@ -41,8 +38,7 @@ func main() {
 
 	// Example 4: JOIN query
 	fmt.Println("\n--- Example 4: JOIN query ---")
-	sql, params = tomasql.NewBuilder().
-		Select(Users.Name, Orders.Id.As("order_id"), Orders.TotalAmount).
+	sql, params = tomasql.Select(Users.Name, Orders.Id.As("order_id"), Orders.TotalAmount).
 		From(Users).
 		Join(Orders).On(Users.Id.Eq(Orders.UserId)).
 		Where(Users.IsActive.EqParam(true)).
@@ -56,8 +52,7 @@ func main() {
 	o := Orders.As("o")
 	p := Products.As("p")
 
-	sql, params = tomasql.NewBuilder().
-		Select(u.Name.As("customer_name"), o.Id.As("order_id"), p.Name.As("product_name")).
+	sql, params = tomasql.Select(u.Name.As("customer_name"), o.Id.As("order_id"), p.Name.As("product_name")).
 		From(u).
 		Join(o).On(u.Id.Eq(o.UserId)).
 		Join(p).On(p.Id.EqParam(1)). // Simplified join for example
@@ -69,8 +64,7 @@ func main() {
 
 	// Example 6: Simple aggregation query
 	fmt.Println("\n--- Example 6: Aggregation query ---")
-	sql, params = tomasql.NewBuilder().
-		Select(Users.Name, tomasql.Count().As("order_count")).
+	sql, params = tomasql.Select(Users.Name, tomasql.Count().As("order_count")).
 		From(Users).
 		LeftJoin(Orders).On(Users.Id.Eq(Orders.UserId)).
 		Where(Users.IsActive.EqParam(true)).

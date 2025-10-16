@@ -59,8 +59,7 @@ func (u *UsersTableDef) As(alias string) *UsersTableDef {
 import "github.com/sergiobonfiglio/tomasql"
 
 // Use generated table definitions
-query := tomasql.NewBuilder().
-    SelectCols(Users.Name, Users.Email).
+query := tomasql.SelectCols(Users.Name, Users.Email).
     From(Users).
     Where(Users.Age.GtParam(18).And(Users.Email.IsNotNull())).
     OrderBy(Users.Name.Asc())

@@ -10,8 +10,7 @@
 //	userName := tomasql.NewCol[string]("name", nil)
 //
 //	// Build query
-//	query := tomasql.NewBuilder().
-//		SelectCols(userID, userName).
+//	query := tomasql.SelectCols(userID, userName).
 //		From(usersTable).
 //		Where(userID.GtParam(100))
 //
@@ -30,9 +29,7 @@
 //   - Code generation for database schema integration
 package tomasql
 
-type builder1 struct{}
-
-func (b *builder1) SelectCols(first Column, columns ...Column) BuilderWithSelect {
+func SelectCols(first Column, columns ...Column) BuilderWithSelect {
 	convertedColumns := make([]ParametricSql, len(columns))
 	for i, col := range columns {
 		convertedColumns[i] = col
@@ -41,11 +38,11 @@ func (b *builder1) SelectCols(first Column, columns ...Column) BuilderWithSelect
 	return newBuilderWithSelect(false, first, convertedColumns...)
 }
 
-func (b *builder1) Select(first ParametricSql, columns ...ParametricSql) BuilderWithSelect {
+func Select(first ParametricSql, columns ...ParametricSql) BuilderWithSelect {
 	return newBuilderWithSelect(false, first, columns...)
 }
 
-func (b *builder1) SelectDistinctCols(first Column, columns ...Column) BuilderWithSelect {
+func SelectDistinctCols(first Column, columns ...Column) BuilderWithSelect {
 	convertedColumns := make([]ParametricSql, len(columns))
 	for i, col := range columns {
 		convertedColumns[i] = col
@@ -53,18 +50,14 @@ func (b *builder1) SelectDistinctCols(first Column, columns ...Column) BuilderWi
 	return newBuilderWithSelect(true, first, convertedColumns...)
 }
 
-func (b *builder1) SelectDistinct(first ParametricSql, column ...ParametricSql) BuilderWithSelect {
+func SelectDistinct(first ParametricSql, column ...ParametricSql) BuilderWithSelect {
 	return newBuilderWithSelect(true, first, column...)
 }
 
-func (b *builder1) SelectAll() BuilderWithSelect {
+func SelectAll() BuilderWithSelect {
 	return newBuilderWithSelectAll(false)
 }
 
-func (b *builder1) SelectDistinctAll() BuilderWithSelect {
+func SelectDistinctAll() BuilderWithSelect {
 	return newBuilderWithSelectAll(true)
-}
-
-func NewBuilder() Builder1 {
-	return &builder1{}
 }

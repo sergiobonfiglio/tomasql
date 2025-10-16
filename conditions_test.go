@@ -93,7 +93,7 @@ func TestConditions(t *testing.T) {
 				},
 				{
 					want: "account.id IN (SELECT shopping_cart.owner_id FROM shopping_cart)",
-					got:  Account.Id.In(NewBuilder().Select(ShoppingCart.OwnerId).From(ShoppingCart).AsSubQuery()).SQL(ParamsMap{}),
+					got:  Account.Id.In(Select(ShoppingCart.OwnerId).From(ShoppingCart).AsSubQuery()).SQL(ParamsMap{}),
 				},
 			},
 		},
@@ -102,7 +102,7 @@ func TestConditions(t *testing.T) {
 			tests: []test{
 				{
 					want: "EXISTS(SELECT 1)",
-					got:  NewExistsCondition(NewBuilder().Select(NewFixedCol(1, nil))).SQL(ParamsMap{}),
+					got:  NewExistsCondition(Select(NewFixedCol(1, nil))).SQL(ParamsMap{}),
 				},
 			},
 		},
@@ -115,7 +115,7 @@ func TestConditions(t *testing.T) {
 				},
 				{
 					want: "account.id = ANY(SELECT shopping_cart.owner_id FROM shopping_cart)",
-					got:  Account.Id.EqAny(NewBuilder().Select(ShoppingCart.OwnerId).From(ShoppingCart).AsSubQuery()).SQL(ParamsMap{}),
+					got:  Account.Id.EqAny(Select(ShoppingCart.OwnerId).From(ShoppingCart).AsSubQuery()).SQL(ParamsMap{}),
 				},
 				{
 					want: "account.id > ANY($1)",
@@ -132,7 +132,7 @@ func TestConditions(t *testing.T) {
 				},
 				{
 					want: "account.id = ALL(SELECT shopping_cart.owner_id FROM shopping_cart)",
-					got:  Account.Id.EqAll(NewBuilder().Select(ShoppingCart.OwnerId).From(ShoppingCart).AsSubQuery()).SQL(ParamsMap{}),
+					got:  Account.Id.EqAll(Select(ShoppingCart.OwnerId).From(ShoppingCart).AsSubQuery()).SQL(ParamsMap{}),
 				},
 				{
 					want: "account.id > ALL($1)",
@@ -239,7 +239,7 @@ func TestCondition_Columns(t *testing.T) {
 		},
 		{
 			name: "in subquery condition columns",
-			impl: newInCondition(NewCol[int64]("col1", nil), NewBuilder().Select(NewCol[int64]("col2", nil))),
+			impl: newInCondition(NewCol[int64]("col1", nil), Select(NewCol[int64]("col2", nil))),
 			want: []Column{NewCol[int64]("col1", nil)},
 		},
 		{
@@ -254,7 +254,7 @@ func TestCondition_Columns(t *testing.T) {
 		},
 		{
 			name: "exists condition columns",
-			impl: NewExistsCondition(NewBuilder().Select(NewCol[int64]("col1", nil))),
+			impl: NewExistsCondition(Select(NewCol[int64]("col1", nil))),
 			want: []Column{},
 		},
 		{
