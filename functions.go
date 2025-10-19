@@ -60,10 +60,10 @@ type MultiParametricSql struct {
 	sqlables  []ParametricSql
 }
 
-func (m *MultiParametricSql) sqlWithParams(paramsMap ParamsMap) (string, ParamsMap) {
+func (m *MultiParametricSql) SqlWithParams(paramsMap ParamsMap) (string, ParamsMap) {
 	var sqls []string
 	for _, pSql := range m.sqlables {
-		sql, pm := pSql.sqlWithParams(paramsMap)
+		sql, pm := pSql.SqlWithParams(paramsMap)
 		sqls = append(sqls, sql)
 		paramsMap = pm
 	}
@@ -167,9 +167,9 @@ func (f *funcCol[T]) IsNotNull() Condition {
 	return newIsCondition(f, comparerNotNull)
 }
 
-func (f *funcCol[T]) InArray(array []T) Condition {
-	return newInArrayCondition(f, array)
-}
+// func (f *funcCol[T]) InArray(array []T) Condition {
+// 	return newInArrayCondition(f, array)
+// }
 
 func (f *funcCol[T]) In(sqlable ParametricSql) Condition {
 	return newInCondition(f, sqlable)
@@ -224,10 +224,10 @@ func newFuncCol[T any](funcName string, inner ParametricSql) FuncColumn[T] {
 	}
 }
 
-func (f *funcCol[T]) sqlWithParams(paramsMap ParamsMap) (string, ParamsMap) {
+func (f *funcCol[T]) SqlWithParams(paramsMap ParamsMap) (string, ParamsMap) {
 	sql := f.funcName + "("
 	var innerSql string
-	innerSql, paramsMap = f.inner.sqlWithParams(paramsMap)
+	innerSql, paramsMap = f.inner.SqlWithParams(paramsMap)
 	sql += innerSql + ")"
 	if f.Alias() != nil {
 		sql += " AS " + *f.Alias()

@@ -31,7 +31,7 @@ func (b *builderWithSelect) From(t Table) BuilderWithTables {
 	return newBuilderWithFrom(b, t)
 }
 
-func (b *builderWithSelect) sqlWithParams(params ParamsMap) (string, ParamsMap) {
+func (b *builderWithSelect) SqlWithParams(params ParamsMap) (string, ParamsMap) {
 	var colStr []string
 
 	b.params = params.AddAll(b.params)
@@ -40,7 +40,7 @@ func (b *builderWithSelect) sqlWithParams(params ParamsMap) (string, ParamsMap) 
 		// potentially, here we could check if the column is a subquery without alias that
 		// would cause a grammar error in SQL
 		var sql string
-		sql, b.params = col.sqlWithParams(b.params)
+		sql, b.params = col.SqlWithParams(b.params)
 
 		colStr = append(colStr, sql)
 	}
@@ -53,7 +53,7 @@ func (b *builderWithSelect) sqlWithParams(params ParamsMap) (string, ParamsMap) 
 }
 
 func (b *builderWithSelect) SQL() (sql string, params []any) {
-	sql, paramsMap := b.sqlWithParams(b.params)
+	sql, paramsMap := b.SqlWithParams(b.params)
 	return sql, paramsMap.ToSlice()
 }
 
@@ -73,7 +73,7 @@ func (b *builderWithSelectAll) From(t Table) BuilderWithTables {
 	return newBuilderWithFrom(b, t)
 }
 
-func (b *builderWithSelectAll) sqlWithParams(params ParamsMap) (string, ParamsMap) {
+func (b *builderWithSelectAll) SqlWithParams(params ParamsMap) (string, ParamsMap) {
 	distinctStr := ""
 	if b.distinct {
 		distinctStr = "DISTINCT "
@@ -82,7 +82,7 @@ func (b *builderWithSelectAll) sqlWithParams(params ParamsMap) (string, ParamsMa
 }
 
 func (b *builderWithSelectAll) SQL() (sql string, params []any) {
-	sql, paramsMap := b.sqlWithParams(b.params)
+	sql, paramsMap := b.SqlWithParams(b.params)
 	return sql, paramsMap.ToSlice()
 }
 
@@ -115,8 +115,8 @@ func (b *withOptionalAlias) As(alias *string) SQLable {
 	return b
 }
 
-func (b *withOptionalAlias) sqlWithParams(params ParamsMap) (string, ParamsMap) {
-	sql, params := b.SQLable.sqlWithParams(params)
+func (b *withOptionalAlias) SqlWithParams(params ParamsMap) (string, ParamsMap) {
+	sql, params := b.SQLable.SqlWithParams(params)
 	if b.alias == nil {
 		return "(" + sql + ")", params
 	}

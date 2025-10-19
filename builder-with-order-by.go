@@ -46,10 +46,10 @@ func (b *builderWithOrderBy) Offset(i int) SQLable {
 	return b
 }
 
-func (b *builderWithOrderBy) sqlWithParams(params ParamsMap) (string, ParamsMap) {
+func (b *builderWithOrderBy) SqlWithParams(params ParamsMap) (string, ParamsMap) {
 	b.params = params.AddAll(b.params)
 	var out string
-	out, b.params = b.prevStage.sqlWithParams(b.params)
+	out, b.params = b.prevStage.SqlWithParams(b.params)
 
 	if len(b.orderBy) > 0 {
 		out += " ORDER BY "
@@ -72,6 +72,6 @@ func (b *builderWithOrderBy) sqlWithParams(params ParamsMap) (string, ParamsMap)
 }
 
 func (b *builderWithOrderBy) SQL() (sql string, params []any) {
-	sql, paramsMap := b.sqlWithParams(b.params)
+	sql, paramsMap := b.SqlWithParams(b.params)
 	return sql, paramsMap.ToSlice()
 }

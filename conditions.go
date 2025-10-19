@@ -2,7 +2,6 @@ package tomasql
 
 import (
 	"fmt"
-	"strings"
 )
 
 type ParamsMap map[any]int
@@ -83,8 +82,8 @@ func newBinaryCondition(left, right ParametricSql, comparer comparerType) *Binar
 func (b *BinaryCondition) SQL(p ParamsMap) string {
 	var leftSql, rightSql string
 	params := p
-	leftSql, params = b.left.sqlWithParams(params)
-	rightSql, _ = b.right.sqlWithParams(params)
+	leftSql, params = b.left.SqlWithParams(params)
+	rightSql, _ = b.right.SqlWithParams(params)
 	return fmt.Sprintf("%s %s %s", leftSql, b.comparer, rightSql)
 }
 
@@ -122,8 +121,9 @@ func (b *BinaryParamCondition[T]) SQL(params ParamsMap) string {
 		params[b.param] = len(params) + 1
 	}
 
-	colSql, _ := b.col.sqlWithParams(params)
-	return fmt.Sprintf("%s %s $%d", colSql, b.comparer, params[b.param])
+	colSql, _ := b.col.SqlWithParams(params)
+	placeholder := GetDialect().Placeholder(params[b.param])
+	return fmt.Sprintf("%s %s %s", colSql, b.comparer, placeholder)
 }
 
 func (b *BinaryParamCondition[T]) And(condition Condition) Condition {
@@ -134,49 +134,49 @@ func (b *BinaryParamCondition[T]) Or(condition Condition) Condition {
 	return newConcatCondition(OrCondConnector, b, condition)
 }
 
-type InArrayCondition[T any] struct {
-	col   ParametricSql
-	array []T
-}
+// type InArrayCondition[T any] struct {
+// 	col   ParametricSql
+// 	array []T
+// }
 
-func (i *InArrayCondition[T]) Columns() []Column {
-	var cols []Column
-	if col, ok := i.col.(Column); ok {
-		cols = append(cols, col)
-	}
-	return cols
-}
+// func (i *InArrayCondition[T]) Columns() []Column {
+// 	var cols []Column
+// 	if col, ok := i.col.(Column); ok {
+// 		cols = append(cols, col)
+// 	}
+// 	return cols
+// }
 
-var _ Condition = &InArrayCondition[any]{} // Ensure InArrayCondition implements Condition
+// var _ Condition = &InArrayCondition[any]{} // Ensure InArrayCondition implements Condition
 
-func newInArrayCondition[T any](col ParametricSql, array []T) *InArrayCondition[T] {
-	return &InArrayCondition[T]{col: col, array: array}
-}
+// func newInArrayCondition[T any](col ParametricSql, array []T) *InArrayCondition[T] {
+// 	return &InArrayCondition[T]{col: col, array: array}
+// }
 
-func (i *InArrayCondition[T]) SQL(params ParamsMap) string {
-	paramsStr := make([]string, len(i.array))
-	for ix, pItem := range i.array {
-		// If the parameter is not already in the map, add it
-		if _, ok := params[pItem]; !ok {
-			params[pItem] = len(params) + 1
-		}
-		order := params[pItem]
-		paramsStr[ix] = fmt.Sprintf("$%d", order)
-	}
-	allParams := strings.Join(paramsStr, ", ")
+// func (i *InArrayCondition[T]) SQL(params ParamsMap) string {
+// 	paramsStr := make([]string, len(i.array))
+// 	for ix, pItem := range i.array {
+// 		// If the parameter is not already in the map, add it
+// 		if _, ok := params[pItem]; !ok {
+// 			params[pItem] = len(params) + 1
+// 		}
+// 		order := params[pItem]	
+// 		paramsStr[ix] = GetDialect().Placeholder(order)
+// 	}
+// 	allParams := strings.Join(paramsStr, ", ")
 
-	colSql, _ := i.col.sqlWithParams(params)
+// 	colSql, _ := i.col.SqlWithParams(params)
 
-	return fmt.Sprintf("%s IN (%s)", colSql, allParams)
-}
+// 	return fmt.Sprintf("%s IN (%s)", colSql, allParams)
+// }
 
-func (i *InArrayCondition[T]) And(condition Condition) Condition {
-	return newConcatCondition(AndCondConnector, i, condition)
-}
+// func (i *InArrayCondition[T]) And(condition Condition) Condition {
+// 	return newConcatCondition(AndCondConnector, i, condition)
+// }
 
-func (i *InArrayCondition[T]) Or(condition Condition) Condition {
-	return newConcatCondition(OrCondConnector, i, condition)
-}
+// func (i *InArrayCondition[T]) Or(condition Condition) Condition {
+// 	return newConcatCondition(OrCondConnector, i, condition)
+// }
 
 type InCondition struct {
 	col     ParametricSql
@@ -201,8 +201,8 @@ func newInCondition(col, sqlable ParametricSql) *InCondition {
 }
 
 func (i *InCondition) SQL(params ParamsMap) string {
-	subquerySql, _ := i.sqlable.sqlWithParams(params)
-	colSql, _ := i.col.sqlWithParams(params)
+	subquerySql, _ := i.sqlable.SqlWithParams(params)
+	colSql, _ := i.col.SqlWithParams(params)
 	sql := fmt.Sprintf("%s IN %s", colSql, subquerySql)
 	return sql
 }
@@ -235,7 +235,7 @@ func newIsCondition(col ParametricSql, comparer comparerType) *IsCondition {
 }
 
 func (i IsCondition) SQL(params ParamsMap) string {
-	colSql, _ := i.col.sqlWithParams(params)
+	colSql, _ := i.col.SqlWithParams(params)
 	return fmt.Sprintf("%s IS %s", colSql, i.comparer)
 }
 
@@ -266,7 +266,7 @@ func NewExistsCondition(inner ParametricSql) *ExistsCondition {
 }
 
 func (e *ExistsCondition) SQL(paramsMap ParamsMap) string {
-	innerSql, _ := e.inner.sqlWithParams(paramsMap)
+	innerSql, _ := e.inner.SqlWithParams(paramsMap)
 	return fmt.Sprintf("EXISTS(%s)", innerSql)
 }
 

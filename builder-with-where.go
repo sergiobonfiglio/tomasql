@@ -28,10 +28,10 @@ func (b *builderWithWhere) OrderBy(column SortColumn, column2 ...SortColumn) Bui
 	return newBuilderWithOrderBy(b, append([]SortColumn{column}, column2...))
 }
 
-func (b *builderWithWhere) sqlWithParams(params ParamsMap) (string, ParamsMap) {
+func (b *builderWithWhere) SqlWithParams(params ParamsMap) (string, ParamsMap) {
 	b.params = params.AddAll(b.params)
 	var sql string
-	sql, b.params = b.prevStage.sqlWithParams(b.params)
+	sql, b.params = b.prevStage.SqlWithParams(b.params)
 
 	whereStr := ""
 	if b.where != nil {
@@ -42,6 +42,6 @@ func (b *builderWithWhere) sqlWithParams(params ParamsMap) (string, ParamsMap) {
 }
 
 func (b *builderWithWhere) SQL() (sql string, params []any) {
-	sql, paramsMap := b.sqlWithParams(b.params)
+	sql, paramsMap := b.SqlWithParams(b.params)
 	return sql, paramsMap.ToSlice()
 }

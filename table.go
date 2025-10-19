@@ -28,11 +28,11 @@ func NewSqlableTable(t Table) *sqlableTable {
 }
 
 func (s *sqlableTable) SQL() (sql string, params []any) {
-	sql, paramsMap := s.sqlWithParams(ParamsMap{})
+	sql, paramsMap := s.SqlWithParams(ParamsMap{})
 	return sql, paramsMap.ToSlice()
 }
 
-func (s *sqlableTable) sqlWithParams(params ParamsMap) (string, ParamsMap) {
+func (s *sqlableTable) SqlWithParams(params ParamsMap) (string, ParamsMap) {
 	tRef := s.table.TableName()
 	if s.table.Alias() != nil {
 		tRef += " AS " + *s.table.Alias()

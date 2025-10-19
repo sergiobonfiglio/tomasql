@@ -1,18 +1,18 @@
 package tomasql
 
-type Builder1 interface {
-	// SelectCols selects distinct columns from the table. Equivalent to SelectDistinct but avoids
-	// the need to convert Column to ParametricSql.
-	SelectCols(first Column, columns ...Column) BuilderWithSelect
-	Select(ParametricSql, ...ParametricSql) BuilderWithSelect
+// type Builder1 interface {
+// 	// SelectCols selects distinct columns from the table. Equivalent to SelectDistinct but avoids
+// 	// the need to convert Column to ParametricSql.
+// 	SelectCols(first Column, columns ...Column) BuilderWithSelect
+// 	Select(ParametricSql, ...ParametricSql) BuilderWithSelect
 
-	// SelectDistinctCols selects distinct columns from the table. Equivalent to SelectDistinct but avoids
-	// the need to convert Column to ParametricSql.
-	SelectDistinctCols(Column, ...Column) BuilderWithSelect
-	SelectDistinct(ParametricSql, ...ParametricSql) BuilderWithSelect
-	SelectDistinctAll() BuilderWithSelect
-	SelectAll() BuilderWithSelect
-}
+// 	// SelectDistinctCols selects distinct columns from the table. Equivalent to SelectDistinct but avoids
+// 	// the need to convert Column to ParametricSql.
+// 	SelectDistinctCols(Column, ...Column) BuilderWithSelect
+// 	SelectDistinct(ParametricSql, ...ParametricSql) BuilderWithSelect
+// 	SelectDistinctAll() BuilderWithSelect
+// 	SelectAll() BuilderWithSelect
+// }
 
 type BuilderWithSelect interface {
 	SubQueryable
@@ -89,6 +89,6 @@ type SortColumn interface {
 	getRef() string
 }
 
-type Integer interface {
-	~int | ~int8 | ~int16 | ~int32 | ~int64
-}
+// type Integer interface {
+// 	~int | ~int8 | ~int16 | ~int32 | ~int64
+// }

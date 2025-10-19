@@ -50,17 +50,17 @@ func (c Col[T]) LikeParam(other string) Condition {
 	return newBinaryParamCondition(c, other, comparerLike)
 }
 
-func (c Col[T]) ILike(other ParametricSql) Condition {
-	return newBinaryCondition(c, other, comparerILike)
-}
+// func (c Col[T]) ILike(other ParametricSql) Condition {
+// 	return newBinaryCondition(c, other, comparerILike)
+// }
 
-func (c Col[T]) ILikeParam(other string) Condition {
-	return newBinaryParamCondition(c, other, comparerILike)
-}
+// func (c Col[T]) ILikeParam(other string) Condition {
+// 	return newBinaryParamCondition(c, other, comparerILike)
+// }
 
-func (c Col[T]) InArray(array []T) Condition {
-	return newInArrayCondition(c, array)
-}
+// func (c Col[T]) InArray(array []T) Condition {
+// 	return newInArrayCondition(c, array)
+// }
 
 func (c Col[T]) In(sqlable ParametricSql) Condition {
 	return newInCondition(c, sqlable)

@@ -12,8 +12,8 @@ type Comparable interface {
 	IsNotNull() Condition
 	Like(other ParametricSql) Condition
 	LikeParam(pattern string) Condition
-	ILike(other ParametricSql) Condition
-	ILikeParam(pattern string) Condition
+	// ILike(other ParametricSql) Condition
+	// ILikeParam(pattern string) Condition
 }
 
 type ComparableParam[T any] interface {
@@ -22,7 +22,7 @@ type ComparableParam[T any] interface {
 	GeParam(other T) Condition
 	LtParam(other T) Condition
 	LeParam(other T) Condition
-	InArray(array []T) Condition
+	// InArray(array []T) Condition
 }
 
 type SetComparable interface {
@@ -60,7 +60,7 @@ type Column interface {
 }
 
 type ParametricSql interface {
-	sqlWithParams(ParamsMap) (string, ParamsMap)
+	SqlWithParams(ParamsMap) (string, ParamsMap)
 }
 
 type colTypeTag string
@@ -85,11 +85,11 @@ type Col[T any] struct {
 }
 
 func (c Col[T]) SQL() (sql string, params []any) {
-	sql, paramsMap := c.sqlWithParams(nil)
+	sql, paramsMap := c.SqlWithParams(nil)
 	return sql, paramsMap.ToSlice()
 }
 
-func (c Col[T]) sqlWithParams(params ParamsMap) (string, ParamsMap) {
+func (c Col[T]) SqlWithParams(params ParamsMap) (string, ParamsMap) {
 	colRef := c.getRef()
 	if c.Alias() != nil {
 		colRef += " AS " + *c.Alias()

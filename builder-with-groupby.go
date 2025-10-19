@@ -31,19 +31,19 @@ func (b *builderWithGroupBy) OrderBy(first SortColumn, columns ...SortColumn) Bu
 }
 
 func (b *builderWithGroupBy) SQL() (sql string, params []any) {
-	sql, paramsMap := b.sqlWithParams(b.params)
+	sql, paramsMap := b.SqlWithParams(b.params)
 	return sql, paramsMap.ToSlice()
 }
 
-func (b *builderWithGroupBy) sqlWithParams(paramsMap ParamsMap) (string, ParamsMap) {
+func (b *builderWithGroupBy) SqlWithParams(paramsMap ParamsMap) (string, ParamsMap) {
 	b.params = paramsMap.AddAll(b.params)
 
 	var sql string
-	sql, b.params = b.prevStage.sqlWithParams(b.params)
+	sql, b.params = b.prevStage.SqlWithParams(b.params)
 	var groupBySql []string
 	for _, col := range b.groupBy {
 		var colSql string
-		colSql, b.params = col.sqlWithParams(b.params)
+		colSql, b.params = col.SqlWithParams(b.params)
 		groupBySql = append(groupBySql, colSql)
 	}
 

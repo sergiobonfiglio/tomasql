@@ -154,7 +154,7 @@ func TestBuilder(t *testing.T) {
 					want: "SELECT a.id, a.uuid, sc.id FROM account AS a " +
 						"JOIN shopping_cart AS sc ON a.id = sc.owner_id " +
 						"JOIN shopping_cart AS sc2 ON a.id = sc2.owner_id " +
-						"WHERE a.id = $1 AND sc.id = $2",
+						"WHERE a.id = " + GetDialect().Placeholder(1) + " AND sc.id = " + GetDialect().Placeholder(2),
 					got: func() string {
 						acc := Account.As("a")
 						sc := ShoppingCart.As("sc")
@@ -196,7 +196,7 @@ func TestBuilder(t *testing.T) {
 			name: "where",
 			tests: []test{
 				{
-					want: "SELECT a.id FROM account AS a WHERE a.id = $1",
+					want: "SELECT a.id FROM account AS a WHERE a.id = " + GetDialect().Placeholder(1),
 					got: func() string {
 						acc := Account.As("a")
 						sql, _ := Select(acc.Id).
@@ -212,7 +212,7 @@ func TestBuilder(t *testing.T) {
 			name: "order by",
 			tests: []test{
 				{
-					want: "SELECT a.id FROM account AS a WHERE a.id = $1 ORDER BY a.id ASC, a.uuid DESC",
+					want: "SELECT a.id FROM account AS a WHERE a.id = " + GetDialect().Placeholder(1) + " ORDER BY a.id ASC, a.uuid DESC",
 					got: func() string {
 						acc := Account.As("a")
 						sql, _ := Select(acc.Id).
@@ -258,7 +258,7 @@ func TestBuilder(t *testing.T) {
 			name: "subqueries",
 			tests: []test{
 				{
-					want: "SELECT (SELECT c.uuid FROM shopping_cart AS c WHERE c.owner_id = $1) AS cart_uuid, a.id FROM account AS a WHERE a.id = $1 OR a.id = $2",
+					want: "SELECT (SELECT c.uuid FROM shopping_cart AS c WHERE c.owner_id = " + GetDialect().Placeholder(1) + ") AS cart_uuid, a.id FROM account AS a WHERE a.id = " + GetDialect().Placeholder(1) + " OR a.id = " + GetDialect().Placeholder(2),
 					got: func() string {
 						acc := Account.As("a")
 						cart := ShoppingCart.As("c")
@@ -287,7 +287,7 @@ func TestBuilder(t *testing.T) {
 			tests: []test{
 				{
 					want: "SELECT account.id, COUNT(1) AS cnt FROM account " +
-						"GROUP BY account.id HAVING COUNT(1) > $1",
+						"GROUP BY account.id HAVING COUNT(1) > " + GetDialect().Placeholder(1),
 					got: func() string {
 						sql, _ := Select(Account.Id, Count().As("cnt")).
 							From(Account).
@@ -299,7 +299,7 @@ func TestBuilder(t *testing.T) {
 				},
 				{
 					want: "SELECT account.id, COUNT(1) AS cnt FROM account " +
-						"GROUP BY account.id HAVING COUNT(1) > $1 " +
+						"GROUP BY account.id HAVING COUNT(1) > " + GetDialect().Placeholder(1) + " " +
 						"ORDER BY account.id ASC",
 					got: func() string {
 						sql, _ := Select(Account.Id, Count().As("cnt")).

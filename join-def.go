@@ -24,12 +24,12 @@ func newJoinDef(joinType JoinType, joinTable Table, cond Condition) *joinDef {
 	}
 }
 
-func (j *joinDef) sqlWithParams(paramsMap ParamsMap) (string, ParamsMap) {
+func (j *joinDef) SqlWithParams(paramsMap ParamsMap) (string, ParamsMap) {
 	joinStr := ""
 	if j.joinType != "" {
 		joinStr += string(j.joinType) + " "
 	}
-	joinTableSql, paramsMap := j.joinTable.sqlWithParams(paramsMap)
+	joinTableSql, paramsMap := j.joinTable.SqlWithParams(paramsMap)
 	joinStr += "JOIN " + joinTableSql
 
 	if j.joinCondition != nil {

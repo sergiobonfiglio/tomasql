@@ -1,0 +1,9 @@
+go 1.23
+
+use ./
+
+use ./cmd/table-def-gen
+
+use ./example-app
+
+use ./dialects/pgres

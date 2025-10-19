@@ -76,17 +76,17 @@ func (b *builderWithJoin) OrderBy(column SortColumn, columns ...SortColumn) Buil
 	return newBuilderWithOrderBy(b, append([]SortColumn{column}, columns...))
 }
 
-func (b *builderWithJoin) sqlWithParams(params ParamsMap) (string, ParamsMap) {
+func (b *builderWithJoin) SqlWithParams(params ParamsMap) (string, ParamsMap) {
 	b.params = params.AddAll(b.params)
 
 	var out string
-	out, b.params = b.prevStage.sqlWithParams(b.params)
+	out, b.params = b.prevStage.SqlWithParams(b.params)
 
 	if len(b.joins) > 0 {
 		var joinStr []string
 		for _, join := range b.joins {
 			var jstr string
-			jstr, b.params = join.sqlWithParams(b.params)
+			jstr, b.params = join.SqlWithParams(b.params)
 			joinStr = append(joinStr, jstr)
 		}
 		join := strings.Join(joinStr, " ")
@@ -96,6 +96,6 @@ func (b *builderWithJoin) sqlWithParams(params ParamsMap) (string, ParamsMap) {
 }
 
 func (b *builderWithJoin) SQL() (sql string, params []any) {
-	sql, paramsMap := b.sqlWithParams(b.params)
+	sql, paramsMap := b.SqlWithParams(b.params)
 	return sql, paramsMap.ToSlice()
 }
