@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/lib/pq v1.10.9
-	github.com/sergiobonfiglio/tomasql v0.3.0
+	github.com/sergiobonfiglio/tomasql v0.4.0
 	github.com/stretchr/testify v1.11.1
 )
 
