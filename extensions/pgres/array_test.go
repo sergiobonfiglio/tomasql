@@ -4,12 +4,16 @@ import (
 	"testing"
 
 	"github.com/sergiobonfiglio/tomasql"
+	"github.com/sergiobonfiglio/tomasql/dialects/pgres"
 	"github.com/stretchr/testify/require"
 )
 
 //go:generate go run ../../cmd/table-def-gen --schema ../../cmd/table-def-gen/example_schema.sql --package-dir ../pgres --table-def-file tables-definitions_gen_test.go --table-graph-file= --with-pgres-extensions
 
 func TestArray(t *testing.T) {
+
+	pgres.SetDialect()
+
 	type test struct {
 		got  string
 		want string
