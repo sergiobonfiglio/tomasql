@@ -1,6 +1,6 @@
 # Table Definition Generator
 
-This tool generates type-safe Go table definitions from your PostgreSQL database schema.
+This tool generates type-safe Go table definitions from a database schema definition SQL file.
 
 ## Usage
 
@@ -8,8 +8,7 @@ The generator creates Go code that provides compile-time type safety for your da
 
 ### Quick Start
 
-1. Set up your PostgreSQL database with your schema
-2. Run the generator:
+1. Run the generator:
 
 ```bash
 go run github.com/sergiobonfiglio/tomasql/cmd/table-def-gen --schema ./path/to/your/schema.sql --package-dir ./path/to/your/package --package-name yourpkg
@@ -17,7 +16,7 @@ go run github.com/sergiobonfiglio/tomasql/cmd/table-def-gen --schema ./path/to/y
 
 ### Generated Code Example
 
-From a PostgreSQL table like:
+From a SQL table definition like:
 
 ```sql
 CREATE TABLE users (
@@ -80,6 +79,7 @@ The generator currently supports PostgreSQL databases and uses the following par
 | `--table-graph-file` | string | No       | `tables-graph.gen.go`      | Name of the generated tables graph file. If empty, graph file won't be generated.     |
 | `--tomasql-import-mode` | string | No       | `full`                     | How to import tomasql package: 'full' (tomasql.Type), 'dot' (. import), 'none' (no import). |
 | `--postgres-image`   | string | No       | `postgres:latest`          | Postgres Docker image to use for tables generation.                                   |
+| `--with-pgres-extensions`   | bool | No       | `false`          | Generates tables with Postgres columns so that Postgres specific methods can be used                                    |
 | `--help`             | bool   | No       | `false`                    | Show help message and exit.                                                           |
 
 #### Example
@@ -96,13 +96,12 @@ go run github.com/sergiobonfiglio/tomasql/cmd/table-def-gen \
 
 ## Requirements
 
-- PostgreSQL database
 - Go 1.23+
 - Docker (for test database setup)
 
 ## Database Type Mappings
 
-| PostgreSQL Type | Go Type     |
+| SQL Type | Go Type     |
 | --------------- | ----------- |
 | `bool`          | `bool`      |
 | `int2`          | `int16`     |
@@ -127,4 +126,3 @@ The generated table definitions provide:
 - **Type Safety**: Column types match your database schema
 - **Table Aliasing**: Support for table aliases in queries
 - **Column References**: Easy access to table columns
-- **Integration**: Seamless integration with TomaSQL query builder

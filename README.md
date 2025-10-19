@@ -3,48 +3,39 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/sergiobonfiglio/tomasql.svg)](https://pkg.go.dev/github.com/sergiobonfiglio/tomasql)
 [![Go Report Card](https://goreportcard.com/badge/github.com/sergiobonfiglio/tomasql)](https://goreportcard.com/report/github.com/sergiobonfiglio/tomasql)
 
-TomaSQL is a type-safe SQL query builder for Go that provides a fluent API for constructing SQL queries with compile-time type checking and excellent IDE support.
+TomaSQL is a type-safe SQL query builder for Go that provides a fluent API for constructing SQL queries with compile-time type checking.
 
 ## Features
 
-- 🔒 **Type-safe**: Compile-time type checking for SQL queries
-- ⚡ **Performance**: Zero reflection
-- 🎯 **Fluent API**: Intuitive, chainable query building
-- 📊 **Rich SQL Support**: JOINs, subqueries, aggregations, and more
-- 🗃️ **Database Schema Integration**: Generate type-safe table definitions from your database schema
-
-## Installation
-
-```bash
-go get github.com/sergiobonfiglio/tomasql
-```
+- **Type-safe**: Compile-time type checking for SQL queries
+- **Performance**: No reflection
+- **Fluent API**: Intuitive, chainable query building
+- **Rich SQL Support**: JOINs, subqueries, aggregations, and more
+- **Database Schema Integration**: Generate type-safe table definitions from your database schema
 
 ## Quick Start
 
-There are two ways to use TomaSQL:
+1. Get the library and code generation tool:
 
-1. **With Code Generation (Recommended)** - Generate type-safe table definitions from your database schema
-2. **Manual Definition** - Create table and column definitions manually
-
-### Option 1: With Code Generation (Recommended)
-
-1. Install the library and code generation tool:
    ```bash
    go get github.com/sergiobonfiglio/tomasql
    ```
 
 2. Generate table definitions from your schema directly through the command line:
+
    ```bash
    # First create your schema.sql file with your database schema
-   go run github.com/sergiobonfiglio/tomasql/cmd/table-def-gen --schema ./schema.sql --package-dir . --package-name main
-
+   go run github.com/sergiobonfiglio/tomasql/cmd/table-def-gen@latest --schema ./schema.sql --package-dir . --package-name main
    ```
-   or a go:generate comment in your main.go file:
+
+   or a `go:generate` comment:
+
    ```go
-   //go:generate go run github.com/sergiobonfiglio/tomasql/cmd/table-def-gen --schema ./schema.sql --package-dir . --package-name main
+   //go:generate go run github.com/sergiobonfiglio/tomasql/cmd/table-def-gen@latest --schema ./schema.sql --package-dir . --package-name main
    ```
 
 3. Use the generated tables:
+
    ```go
    package main
 
@@ -60,66 +51,38 @@ There are two ways to use TomaSQL:
            Where(Users.IsActive.EqParam(true)).
            OrderBy(Users.Name.Asc()).
            Limit(10)
-       
+
        sql, params := query.SQL()
        fmt.Println("SQL:", sql)
        fmt.Println("Params:", params)
-       
+
        // Output:
-       // SQL: SELECT users.id, users.name, users.email FROM users WHERE users.is_active = $1 ORDER BY users.name ASC LIMIT 10
+       // SQL:
+       // SELECT users.id, users.name, users.email
+       // FROM users
+       // WHERE users.is_active = ?
+       // ORDER BY users.name ASC
+       // LIMIT 10
        // Params: [true]
    }
    ```
 
-### Option 2: Manual Definition
-
-```go
-package main
-
-import (
-    "fmt"
-    "github.com/sergiobonfiglio/tomasql"
-)
-
-func main() {
-    // Create columns manually
-    userID := tomasql.NewCol[int]("id", nil)
-    userName := tomasql.NewCol[string]("name", nil) 
-    userEmail := tomasql.NewCol[string]("email", nil)
-    
-    // Build a query
-    query := tomasql.Select(userID, userName, userEmail).
-        Where(userID.GtParam(100).And(userName.LikeParam("%john%"))).
-        OrderBy(userName.Asc()).
-        Limit(10)
-    
-    sql, params := query.SQL()
-    fmt.Println("SQL:", sql)
-    fmt.Println("Params:", params)
-}
-```
-
 ### Working with JOINs
 
 ```go
-// Define table relationships
-usersTable := tomasql.NewCol[int]("users", nil)
-postsTable := tomasql.NewCol[int]("posts", nil)
-
-userID := tomasql.NewCol[int]("id", usersTable)
-userName := tomasql.NewCol[string]("name", usersTable)
-postID := tomasql.NewCol[int]("id", postsTable)
-postTitle := tomasql.NewCol[string]("title", postsTable)
-postUserID := tomasql.NewCol[int]("user_id", postsTable)
-
-query := tomasql.SelectCols(userName, postTitle).
-    From(usersTable).
-    Join(postsTable).On(userID.Eq(postUserID)).
-    Where(userName.IsNotNull()).
-    OrderBy(userName.Asc())
+query := tomasql.SelectCols(Users.Name, Posts.Title).
+    From(Users).
+    Join(Posts).On(Users.Id.Eq(Posts.UserId)).
+    Where(Users.Name.IsNotNull()).
+    OrderBy(Users.Name.Asc())
 
 sql, params := query.SQL()
-// SQL: SELECT users.name, posts.title FROM users JOIN posts ON users.id = posts.user_id WHERE users.name IS NOT NULL ORDER BY users.name ASC
+// SQL:
+// SELECT users.name, posts.title
+// FROM users
+// JOIN posts ON users.id = posts.user_id
+// WHERE users.name IS NOT NULL
+// ORDER BY users.name ASC
 ```
 
 ### Using Functions and Aggregations
@@ -128,100 +91,78 @@ sql, params := query.SQL()
 import "github.com/sergiobonfiglio/tomasql"
 
 // Count users by status
+totalUsers := tomasql.Count().As("total_users")
 query := tomasql.Select(
-        userStatus,
-        tomasql.Count().As("total_users"),
+        Users.Status,
+        totalUsers,
         tomasql.Avg[float64](userAge).As("avg_age"),
     ).
-    From(usersTable).
-    Where(userStatus.InArray([]string{"active", "pending"})).
-    GroupBy(userStatus).
+    From(Users).
+    GroupBy(Users.Status).
     Having(tomasql.Count().GtParam(10)).
     OrderBy(tomasql.Count().Desc())
 
 sql, params := query.SQL()
+// SQL:
+// SELECT users.status, COUNT(*) AS total_users, AVG(users.age) AS avg_age
+// FROM users
+// GROUP BY users.status
+// HAVING COUNT(*) > ?
+// ORDER BY COUNT(*) DESC
 ```
 
 ### Subqueries
 
 ```go
 // Subquery example
-subQuery := tomasql.SelectCols(userID).
-    From(usersTable).
-    Where(userAge.GeParam(18))
+subQuery := tomasql.SelectCols(Users.Id).
+    From(Users).
+    Where(Users.Age.GeParam(18))
 
 mainQuery := tomasql.SelectAll().
-    From(postsTable).
-    Where(postUserID.In(subQuery))
+    From(Posts).
+    Where(Posts.UserId.In(subQuery))
 
 sql, params := mainQuery.SQL()
-// SQL: SELECT * FROM posts WHERE user_id IN (SELECT id FROM users WHERE age >= $1)
+// SQL:
+// SELECT *
+// FROM posts
+// WHERE posts.user_id IN (
+//      SELECT users.id FROM users WHERE users.age >= ?)
 ```
 
 ### Working with Complex Conditions
 
 ```go
-// Complex WHERE conditions
-condition1 := userName.LikeParam("%admin%")
-condition2 := userAge.GtParam(25).And(userStatus.EqParam("active"))
-condition3 := userEmail.IsNotNull()
-
 query := tomasql.SelectAll().
-    From(usersTable).
-    Where(condition1.Or(condition2).And(condition3))
+    From(Users).
+    Where(User.Name.LikeParam("%admin%").
+        Or(User.Age.GtParam(25).And(User.Status.EqParam("active")))
 
 sql, params := query.SQL()
+// SQL:
+// SELECT *
+// FROM users
+// WHERE users.name LIKE ? OR (users.age > ? AND users.status = ?)
 ```
 
-## Advanced Features
-
-### Custom Column Types
-
-```go
-// Define custom column types
-type UserStatus string
-const (
-    UserStatusActive   UserStatus = "active"
-    UserStatusInactive UserStatus = "inactive"
-)
-
-userStatus := tomasql.NewCol[UserStatus]("status", usersTable)
-query := tomasql.SelectAll().
-    From(usersTable).
-    Where(userStatus.EqParam(UserStatusActive))
-```
-
-### Working with Arrays and ANY/ALL
-
-```go
-// Array operations
-userIDs := []int{1, 2, 3, 4, 5}
-query := tomasql.SelectAll().
-    From(usersTable).
-    Where(userID.InArray(userIDs))
-
-// ANY/ALL operations with subqueries  
-subQuery := tomasql.SelectCols(postUserID).From(postsTable)
-query2 := tomasql.SelectAll().
-    From(usersTable).
-    Where(userID.EqAny(subQuery))
-```
-
-### Table Definition Generation
+## Table Definition Generation
 
 TomaSQL includes a code generation tool to create type-safe table definitions from your database schema:
 
 1. **Create your database schema** (`schema.sql`)
 2. **Generate table definitions**:
+
    ```bash
    # Install the code generation tool
    go install github.com/sergiobonfiglio/tomasql/cmd/table-def-gen@latest
-   
+
    # Generate table definitions (customize for your database)
    table-def-gen -schema schema.sql -output tables.go
    ```
 
 3. **Use generated type-safe tables**:
+
    ```go
    // Generated table definitions provide full type safety
    type UsersTableDef struct {
@@ -232,9 +173,9 @@ TomaSQL includes a code generation tool to create type-safe table definitions fr
        Email     *tomasql.Col[string]
        IsActive  *tomasql.Col[bool]
    }
-   
+
    var Users = newUsersTable()
-   
+
    // Usage with generated tables
    query := tomasql.Select(Users.Name, Users.Email).
        From(Users).
@@ -245,25 +186,66 @@ TomaSQL includes a code generation tool to create type-safe table definitions fr
 
 ## API Reference
 
-### Core Interfaces
+### Entry Points
 
-- `Builder1` - Entry point for query building
-- `Column` - Represents a database column with type safety
-- `Table` - Represents a database table
-- `Condition` - Represents WHERE/HAVING conditions  
-- `SQLable` - Can be converted to SQL with parameters
+- `Select(cols ...ParametricSql)` - Start a SELECT query
+- `SelectAll()` - Start a SELECT \* query (equivalent to `Select(<GenTable>.Star())`
+- `SelectDistinct(cols ...ParametricSql)` - Start a SELECT DISTINCT query
 
-### Key Functions
+Every entry point also has an alternative version which takes `Column` as parameters instead of `ParametricSql` to avoid manual casting if you have an array of columns you want to select.
 
-- `NewCol[T](name, table)` - Create a typed column
-- `NewTableFromSubQuery()` - Create table from subquery
+### Comparisons
+
+The standard Column implementation also provides type-safe comparison methods:
+
+- `Eq(value T)` -> =
+- `Neq(value T)` -> <>
+- `Gt(value T)` -> >
+- `Gte(value T)` -> >=
+- `Lt(value T)` -> <
+- `Lte(value T)` -> <=
+- `Like(value ParametricSql)` -> LIKE
+- `IsNull()` -> IS NULL
+- `IsNotNull()` -> IS NOT NULL
+
+Each comparison method also has a `*Param` variant that takes a value and generates a parameter placeholder for it, e.g. `EqParam(value T)`.
 
 ### SQL Functions
 
 - `Count()`, `Sum[T]()`, `Avg[T]()`, `Min[T]()`, `Max[T]()`
 - `Upper()`, `Lower()`, `Length()`, `Trim()`
 - `Coalesce[T]()`, `Round()`, `Abs[T]()`
-- `Exists()`
+- `Exists(ParametricSql)`, `Any(ParametricSql)`, `All(ParametricSql)`, `In(ParametricSql)`
+
+## Dialects
+
+TomaSQL is designed to support multiple SQL dialects, which you can set globally.
+Dialects are implemented in the `dialects` package and they can be set using:
+
+```go
+import (
+    "github.com/sergiobonfiglio/tomasql"
+    "github.com/sergiobonfiglio/tomasql/dialects/pgres"
+)
+
+func init() {
+    // example of setting Postgres dialect
+    pgres.SetDialect()
+    // or, equivalently:
+    tomasql.SetDialect(pgres.GetDialect())
+}
+```
+
+### Extensions
+
+Also, some dialects provide extensions with additional column types and methods. Since these extensions can introduce additional dependencies, they are defined in different modules. You can import them explicitly:
+
+```go
+import _ "github.com/sergiobonfiglio/tomasql/extensions/pgres"
+```
+
+To enable PostgreSQL-specific features (like array support or ILIKE) you need to either: wrap table columns with the extension column types manually, e.g. `pgres.Wrap(...)`, or generate the table definitions with the `--with-pgres-extensions` flag enabled in the `table-def-gen` tool. See the example-app for a complete example.
+
 
 ## Example Application
 
@@ -273,28 +255,3 @@ The repository includes a complete example application demonstrating TomaSQL usa
 # Run the example application
 go run ./example-app
 ```
-
-The `example-app/` directory contains:
-- **`schema.sql`** - Complete PostgreSQL schema (users, products, orders, etc.)
-- **`tables-definitions_test.gen.go`** - Generated table definitions with full type safety
-- **`tables-graph.gen.go`** - Generated graph of table relationships
-- **`main.go`** - Comprehensive examples showing all TomaSQL features
-- **`README.md`** - Detailed documentation
-
-### Example App Features Demonstrated
-
-- ✅ Basic SELECT queries with type safety
-- ✅ Complex JOINs across multiple tables
-- ✅ WHERE clauses with parameterized conditions
-- ✅ Table aliases and column aliasing
-- ✅ Aggregation functions (COUNT, SUM, etc.)
-- ✅ ORDER BY with multiple columns
-- ✅ Left/Right/Inner JOIN operations
-
-## Examples
-
-Check out the **example-app** directory for comprehensive usage examples including:
-
-- Complex JOINs and subqueries  
-- Aggregation functions
-- Database schema integration

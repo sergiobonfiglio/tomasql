@@ -38,6 +38,7 @@ func main() {
 	tableGraphFileFlag := flag.String("table-graph-file", "tables-graph.gen.go", "Name of the generated tables graph file (default: tables-graph.gen.go). If empty, the graph file will not be generated.")
 	tomasqlImportModeFlag := flag.String("tomasql-import-mode", "full", "How to import tomasql package: 'full' (tomasql.Type), 'dot' (. import), 'none' (no import)")
 	postgresImageFlag := flag.String("postgres-image", "postgres:latest", "Postgres image to use for tables generation (default: postgres:latest)")
+	withPgresExtensionsFlag := flag.Bool("with-pgres-extensions", false, "If true, the generated tables definitions will include pgres extensions (default: false)")
 
 	flag.Parse()
 
@@ -64,7 +65,7 @@ func main() {
 	_, filename, _, _ := runtime.Caller(0)
 	dir := filepath.Dir(filename)
 
-	tmpl, err := template.New("table-def.tmpl").Funcs(template.FuncMap{
+	tmplFuncs := template.FuncMap{
 		"TomasqlImportMode": func() string { return tomasqlImportMode },
 		"TomasqlPrefix": func() string {
 			switch tomasqlImportMode {
@@ -76,30 +77,6 @@ func main() {
 				return "tomasql."
 			}
 		},
-	}).ParseFiles(filepath.Join(dir, "table-def.tmpl"))
-	if err != nil {
-		panic(err)
-	}
-
-	// Helper function to execute template and format the output
-	executeAndFormat := func(tmpl *template.Template, data interface{}, outputPath string) error {
-		// Execute template to a buffer first
-		var buf bytes.Buffer
-		err := tmpl.Execute(&buf, data)
-		if err != nil {
-			return err
-		}
-
-		// Format the generated code
-		formatted, err := format.Source(buf.Bytes())
-		if err != nil {
-			// If formatting fails, use the unformatted version
-			log.Printf("Warning: failed to format %s: %v", outputPath, err)
-			formatted = buf.Bytes()
-		}
-
-		// Write to file
-		return os.WriteFile(outputPath, formatted, 0644)
 	}
 
 	container, err := SetupTestContainer(nil, schemaPath, dockerImage)
@@ -108,6 +85,22 @@ func main() {
 	}
 
 	tableDefData, err := getTableDefinitionFromTestDB(container, pkgName)
+	if err != nil {
+		panic(err)
+	}
+
+	tableDefTemplateFiles := []string{filepath.Join(dir, "table-def.tmpl")}
+
+	if withPgresExtensionsFlag != nil && *withPgresExtensionsFlag {
+		// add import for pgres extensions
+		tableDefData.Imports = append(tableDefData.Imports, "github.com/sergiobonfiglio/tomasql/extensions/pgres")
+		// use pgres-specific overrides
+		tableDefTemplateFiles = append(tableDefTemplateFiles, filepath.Join(dir, "table-def-pgres.tmpl"))
+	}
+
+	tmpl, err := template.New("table-def.tmpl").
+		Funcs(tmplFuncs).
+		ParseFiles(tableDefTemplateFiles...)
 	if err != nil {
 		panic(err)
 	}
@@ -121,19 +114,9 @@ func main() {
 
 	// Generate graph definitions if tableGraphFile is not empty
 	if tableGraphFile != "" {
-		tmplGraph, err := template.New("tables-graph.tmpl").Funcs(template.FuncMap{
-			"TomasqlImportMode": func() string { return tomasqlImportMode },
-			"TomasqlPrefix": func() string {
-				switch tomasqlImportMode {
-				case "full":
-					return "tomasql."
-				case "dot", "none":
-					return ""
-				default:
-					return "tomasql."
-				}
-			},
-		}).ParseFiles(filepath.Join(dir, "tables-graph.tmpl"))
+		tmplGraph, err := template.New("tables-graph.tmpl").
+			Funcs(tmplFuncs).
+			ParseFiles(filepath.Join(dir, "tables-graph.tmpl"))
 		if err != nil {
 			panic(err)
 		}
@@ -209,7 +192,8 @@ ORDER BY 1, 2
 		}
 		// TODO: constants for enums?
 		mappedType := psqlTypeToGo(item.BaseType)
-		if idx := strings.Index(mappedType, "."); idx > 0 { // pkg.Type pattern
+		if idx := strings.Index(mappedType, "."); idx > 0 {
+			// add import for types that need it (e.g. time.Time), assuming only standard library packages for now
 			pkgPart := mappedType[:idx]
 			importsSet[pkgPart] = struct{}{}
 		}
@@ -479,4 +463,25 @@ func createRandString(n int) string {
 		b[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
 	return string(b)
+}
+
+// Helper function to execute template and format the output
+func executeAndFormat(tmpl *template.Template, data interface{}, outputPath string) error {
+	// Execute template to a buffer first
+	var buf bytes.Buffer
+	err := tmpl.Execute(&buf, data)
+	if err != nil {
+		return err
+	}
+
+	// Format the generated code
+	formatted, err := format.Source(buf.Bytes())
+	if err != nil {
+		// If formatting fails, use the unformatted version
+		log.Printf("Warning: failed to format %s: %v", outputPath, err)
+		formatted = buf.Bytes()
+	}
+
+	// Write to file
+	return os.WriteFile(outputPath, formatted, 0644)
 }

@@ -27,7 +27,7 @@ func (c *ConcatCondition) Columns() []Column {
 
 var _ Condition = &ConcatCondition{} // Ensure ConcatCondition implements Condition
 
-func newConcatCondition(connector ConditionConnector, conditions ...Condition) *ConcatCondition {
+func NewConcatCondition(connector ConditionConnector, conditions ...Condition) *ConcatCondition {
 	return &ConcatCondition{conditions: conditions, connector: connector}
 }
 
@@ -41,11 +41,11 @@ func (c *ConcatCondition) SQL(p ParamsMap) string {
 }
 
 func (c *ConcatCondition) And(condition Condition) Condition {
-	return newConcatCondition(AndCondConnector, c, condition)
+	return NewConcatCondition(AndCondConnector, c, condition)
 }
 
 func (c *ConcatCondition) Or(condition Condition) Condition {
-	return newConcatCondition(OrCondConnector, c, condition)
+	return NewConcatCondition(OrCondConnector, c, condition)
 }
 
 type GroupedCondition struct {
@@ -63,9 +63,9 @@ func (g *GroupedCondition) SQL(p ParamsMap) string {
 }
 
 func (g *GroupedCondition) And(condition Condition) Condition {
-	return newConcatCondition(AndCondConnector, g, condition)
+	return NewConcatCondition(AndCondConnector, g, condition)
 }
 
 func (g *GroupedCondition) Or(condition Condition) Condition {
-	return newConcatCondition(OrCondConnector, g, condition)
+	return NewConcatCondition(OrCondConnector, g, condition)
 }

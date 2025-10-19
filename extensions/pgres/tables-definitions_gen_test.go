@@ -4,25 +4,26 @@ package pgres
 
 import (
 	"github.com/sergiobonfiglio/tomasql"
+	"github.com/sergiobonfiglio/tomasql/extensions/pgres"
 )
 
 type AccountTableDef struct {
 	*tomasql.SqlableTable
 	alias     *string
-	CreatedTs *tomasql.Col[int]
-	Id        *tomasql.Col[int64]
-	Type      *tomasql.Col[string]
-	Uuid      *tomasql.Col[string]
+	CreatedTs *pgres.PGCol[int]
+	Id        *pgres.PGCol[int64]
+	Type      *pgres.PGCol[string]
+	Uuid      *pgres.PGCol[string]
 }
 
 var _ tomasql.Table = &AccountTableDef{}
 
 func newAccountTable() *AccountTableDef {
 	tDef := &AccountTableDef{}
-	tDef.CreatedTs = tomasql.NewCol[int]("created_ts", tDef)
-	tDef.Id = tomasql.NewCol[int64]("id", tDef)
-	tDef.Type = tomasql.NewCol[string]("type", tDef)
-	tDef.Uuid = tomasql.NewCol[string]("uuid", tDef)
+	tDef.CreatedTs = pgres.Wrap(tomasql.NewCol[int]("created_ts", tDef))
+	tDef.Id = pgres.Wrap(tomasql.NewCol[int64]("id", tDef))
+	tDef.Type = pgres.Wrap(tomasql.NewCol[string]("type", tDef))
+	tDef.Uuid = pgres.Wrap(tomasql.NewCol[string]("uuid", tDef))
 	tDef.SqlableTable = tomasql.NewSqlableTable(tDef)
 	return tDef
 }
@@ -50,22 +51,22 @@ func (a *AccountTableDef) Star() tomasql.ParametricSql {
 type ConfigTableDef struct {
 	*tomasql.SqlableTable
 	alias      *string
-	AccountId  *tomasql.Col[int64]
-	ArchivedTs *tomasql.Col[int]
-	CreatedTs  *tomasql.Col[int]
-	Id         *tomasql.Col[int64]
-	Uuid       *tomasql.Col[string]
+	AccountId  *pgres.PGCol[int64]
+	ArchivedTs *pgres.PGCol[int]
+	CreatedTs  *pgres.PGCol[int]
+	Id         *pgres.PGCol[int64]
+	Uuid       *pgres.PGCol[string]
 }
 
 var _ tomasql.Table = &ConfigTableDef{}
 
 func newConfigTable() *ConfigTableDef {
 	tDef := &ConfigTableDef{}
-	tDef.AccountId = tomasql.NewCol[int64]("account_id", tDef)
-	tDef.ArchivedTs = tomasql.NewCol[int]("archived_ts", tDef)
-	tDef.CreatedTs = tomasql.NewCol[int]("created_ts", tDef)
-	tDef.Id = tomasql.NewCol[int64]("id", tDef)
-	tDef.Uuid = tomasql.NewCol[string]("uuid", tDef)
+	tDef.AccountId = pgres.Wrap(tomasql.NewCol[int64]("account_id", tDef))
+	tDef.ArchivedTs = pgres.Wrap(tomasql.NewCol[int]("archived_ts", tDef))
+	tDef.CreatedTs = pgres.Wrap(tomasql.NewCol[int]("created_ts", tDef))
+	tDef.Id = pgres.Wrap(tomasql.NewCol[int64]("id", tDef))
+	tDef.Uuid = pgres.Wrap(tomasql.NewCol[string]("uuid", tDef))
 	tDef.SqlableTable = tomasql.NewSqlableTable(tDef)
 	return tDef
 }
@@ -93,22 +94,22 @@ func (a *ConfigTableDef) Star() tomasql.ParametricSql {
 type ShoppingCartTableDef struct {
 	*tomasql.SqlableTable
 	alias      *string
-	ArchivedTs *tomasql.Col[int]
-	CreatedTs  *tomasql.Col[int]
-	Id         *tomasql.Col[int64]
-	OwnerId    *tomasql.Col[int64]
-	Uuid       *tomasql.Col[string]
+	ArchivedTs *pgres.PGCol[int]
+	CreatedTs  *pgres.PGCol[int]
+	Id         *pgres.PGCol[int64]
+	OwnerId    *pgres.PGCol[int64]
+	Uuid       *pgres.PGCol[string]
 }
 
 var _ tomasql.Table = &ShoppingCartTableDef{}
 
 func newShoppingCartTable() *ShoppingCartTableDef {
 	tDef := &ShoppingCartTableDef{}
-	tDef.ArchivedTs = tomasql.NewCol[int]("archived_ts", tDef)
-	tDef.CreatedTs = tomasql.NewCol[int]("created_ts", tDef)
-	tDef.Id = tomasql.NewCol[int64]("id", tDef)
-	tDef.OwnerId = tomasql.NewCol[int64]("owner_id", tDef)
-	tDef.Uuid = tomasql.NewCol[string]("uuid", tDef)
+	tDef.ArchivedTs = pgres.Wrap(tomasql.NewCol[int]("archived_ts", tDef))
+	tDef.CreatedTs = pgres.Wrap(tomasql.NewCol[int]("created_ts", tDef))
+	tDef.Id = pgres.Wrap(tomasql.NewCol[int64]("id", tDef))
+	tDef.OwnerId = pgres.Wrap(tomasql.NewCol[int64]("owner_id", tDef))
+	tDef.Uuid = pgres.Wrap(tomasql.NewCol[string]("uuid", tDef))
 	tDef.SqlableTable = tomasql.NewSqlableTable(tDef)
 	return tDef
 }

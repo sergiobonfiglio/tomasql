@@ -15,7 +15,7 @@ type sqlableArray struct {
 
 var _ tomasql.ParametricSql = &sqlableArray{}
 
-func SQLArray[T any](array []T) tomasql.ParametricSql {
+func Array[T any](array []T) tomasql.ParametricSql {
 	return newSQLableArray(array)
 }
 

@@ -104,59 +104,51 @@ func (f *funcCol[T]) Alias() *string {
 }
 
 func (f *funcCol[T]) Eq(other ParametricSql) Condition {
-	return newBinaryCondition(f, other, comparerEq)
+	return NewBinaryCondition(f, other, comparerEq)
 }
 
 func (f *funcCol[T]) EqParam(other T) Condition {
-	return newBinaryParamCondition(f, other, comparerEq)
+	return NewBinaryParamCondition(f, other, comparerEq)
 }
 
 func (f *funcCol[T]) Gt(other ParametricSql) Condition {
-	return newBinaryCondition(f, other, comparerGt)
+	return NewBinaryCondition(f, other, comparerGt)
 }
 
 func (f *funcCol[T]) GtParam(other T) Condition {
-	return newBinaryParamCondition(f, other, comparerGt)
+	return NewBinaryParamCondition(f, other, comparerGt)
 }
 
 func (f *funcCol[T]) Ge(other ParametricSql) Condition {
-	return newBinaryCondition(f, other, comparerGe)
+	return NewBinaryCondition(f, other, comparerGe)
 }
 
 func (f *funcCol[T]) GeParam(other T) Condition {
-	return newBinaryParamCondition(f, other, comparerGe)
+	return NewBinaryParamCondition(f, other, comparerGe)
 }
 
 func (f *funcCol[T]) Lt(other ParametricSql) Condition {
-	return newBinaryCondition(f, other, comparerLt)
+	return NewBinaryCondition(f, other, comparerLt)
 }
 
 func (f *funcCol[T]) LtParam(other T) Condition {
-	return newBinaryParamCondition(f, other, comparerLt)
+	return NewBinaryParamCondition(f, other, comparerLt)
 }
 
 func (f *funcCol[T]) Le(other ParametricSql) Condition {
-	return newBinaryCondition(f, other, comparerLe)
+	return NewBinaryCondition(f, other, comparerLe)
 }
 
 func (f *funcCol[T]) LeParam(other T) Condition {
-	return newBinaryParamCondition(f, other, comparerLe)
+	return NewBinaryParamCondition(f, other, comparerLe)
 }
 
 func (f *funcCol[T]) Like(other ParametricSql) Condition {
-	return newBinaryCondition(f, other, comparerLike)
+	return NewBinaryCondition(f, other, comparerLike)
 }
 
 func (f *funcCol[T]) LikeParam(pattern string) Condition {
-	return newBinaryParamCondition(f, pattern, comparerLike)
-}
-
-func (f *funcCol[T]) ILike(other ParametricSql) Condition {
-	return newBinaryCondition(f, other, comparerILike)
-}
-
-func (f *funcCol[T]) ILikeParam(pattern string) Condition {
-	return newBinaryParamCondition(f, pattern, comparerILike)
+	return NewBinaryParamCondition(f, pattern, comparerLike)
 }
 
 func (f *funcCol[T]) IsNull() Condition {
@@ -167,52 +159,48 @@ func (f *funcCol[T]) IsNotNull() Condition {
 	return newIsCondition(f, comparerNotNull)
 }
 
-// func (f *funcCol[T]) InArray(array []T) Condition {
-// 	return newInArrayCondition(f, array)
-// }
-
 func (f *funcCol[T]) In(sqlable ParametricSql) Condition {
 	return newInCondition(f, sqlable)
 }
 
 func (f *funcCol[T]) EqAny(sqlable ParametricSql) Condition {
-	return newAnyArrayCondition(f, comparerEq, sqlable)
+	return newAnyCondition(f, comparerEq, sqlable)
 }
 
 func (f *funcCol[T]) EqAll(sqlable ParametricSql) Condition {
-	return newAllArrayCondition(f, comparerEq, sqlable)
+	return newAllCondition(f, comparerEq, sqlable)
 }
 
 func (f *funcCol[T]) GtAny(sqlable ParametricSql) Condition {
-	return newAnyArrayCondition(f, comparerGt, sqlable)
+	return newAnyCondition(f, comparerGt, sqlable)
 }
 
 func (f *funcCol[T]) GtAll(sqlable ParametricSql) Condition {
-	return newAllArrayCondition(f, comparerGt, sqlable)
+	return newAllCondition(f, comparerGt, sqlable)
 }
 
 func (f *funcCol[T]) GeAny(sqlable ParametricSql) Condition {
-	return newAnyArrayCondition(f, comparerGe, sqlable)
+	return newAnyCondition(f, comparerGe, sqlable)
 }
 
 func (f *funcCol[T]) GeAll(sqlable ParametricSql) Condition {
-	return newAllArrayCondition(f, comparerGe, sqlable)
+	return newAllCondition(f, comparerGe, sqlable)
 }
 
 func (f *funcCol[T]) LtAny(sqlable ParametricSql) Condition {
-	return newAnyArrayCondition(f, comparerLt, sqlable)
+	return newAnyCondition(f, comparerLt, sqlable)
 }
 
 func (f *funcCol[T]) LtAll(sqlable ParametricSql) Condition {
-	return newAllArrayCondition(f, comparerLt, sqlable)
+	return newAllCondition(f, comparerLt, sqlable)
 }
 
 func (f *funcCol[T]) LeAny(sqlable ParametricSql) Condition {
-	return newAnyArrayCondition(f, comparerLe, sqlable)
+	return newAnyCondition(f, comparerLe, sqlable)
 }
 
 func (f *funcCol[T]) LeAll(sqlable ParametricSql) Condition {
-	return newAllArrayCondition(f, comparerLe, sqlable)
+	return newAllCondition(f, comparerLe, sqlable)
 }
 
 var _ FuncColumn[any] = &funcCol[any]{}

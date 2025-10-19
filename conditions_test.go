@@ -21,12 +21,12 @@ func TestCondition_Columns(t *testing.T) {
 		},
 		{
 			name: "binary condition columns",
-			impl: newBinaryCondition(NewCol[int64]("col1", nil), NewCol[int64]("col2", nil), comparerEq),
+			impl: NewBinaryCondition(NewCol[int64]("col1", nil), NewCol[int64]("col2", nil), comparerEq),
 			want: []Column{NewCol[int64]("col1", nil), NewCol[int64]("col2", nil)},
 		},
 		{
 			name: "binary condition with param columns",
-			impl: newBinaryParamCondition(NewCol[int64]("col1", nil), int64(42), comparerEq),
+			impl: NewBinaryParamCondition(NewCol[int64]("col1", nil), int64(42), comparerEq),
 			want: []Column{NewCol[int64]("col1", nil)},
 		},
 		// {
@@ -46,7 +46,7 @@ func TestCondition_Columns(t *testing.T) {
 		},
 		{
 			name: "grouped condition columns",
-			impl: Grouped(newBinaryCondition(NewCol[int64]("col1", nil), NewCol[int64]("col2", nil), comparerEq)),
+			impl: Grouped(NewBinaryCondition(NewCol[int64]("col1", nil), NewCol[int64]("col2", nil), comparerEq)),
 			want: []Column{NewCol[int64]("col1", nil), NewCol[int64]("col2", nil)},
 		},
 		{
@@ -56,8 +56,8 @@ func TestCondition_Columns(t *testing.T) {
 		},
 		{
 			name: "and condition columns",
-			impl: newBinaryCondition(NewCol[int64]("col1", nil), NewCol[int64]("col2", nil), comparerEq).
-				And(newBinaryCondition(NewCol[int64]("col3", nil), NewCol[int64]("col4", nil), comparerEq)),
+			impl: NewBinaryCondition(NewCol[int64]("col1", nil), NewCol[int64]("col2", nil), comparerEq).
+				And(NewBinaryCondition(NewCol[int64]("col3", nil), NewCol[int64]("col4", nil), comparerEq)),
 			want: []Column{
 				NewCol[int64]("col1", nil),
 				NewCol[int64]("col2", nil),
@@ -67,8 +67,8 @@ func TestCondition_Columns(t *testing.T) {
 		},
 		{
 			name: "or condition columns",
-			impl: newBinaryCondition(NewCol[int64]("col1", nil), NewCol[int64]("col2", nil), comparerEq).
-				Or(newBinaryCondition(NewCol[int64]("col3", nil), NewCol[int64]("col4", nil), comparerEq)),
+			impl: NewBinaryCondition(NewCol[int64]("col1", nil), NewCol[int64]("col2", nil), comparerEq).
+				Or(NewBinaryCondition(NewCol[int64]("col3", nil), NewCol[int64]("col4", nil), comparerEq)),
 			want: []Column{
 				NewCol[int64]("col1", nil),
 				NewCol[int64]("col2", nil),

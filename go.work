@@ -1,9 +1,9 @@
-go 1.23
+go 1.24.0
 
 use ./
 
 use ./cmd/table-def-gen
 
-use ./example-app
-
 use ./extensions/pgres
+
+use ./example-app

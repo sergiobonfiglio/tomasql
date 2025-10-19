@@ -42,6 +42,7 @@ type comparerType string
 
 const (
 	comparerEq      = comparerType("=")
+	comparerNeq     = comparerType("<>")
 	comparerGt      = comparerType(">")
 	comparerGe      = comparerType(">=")
 	comparerLt      = comparerType("<")
@@ -49,12 +50,11 @@ const (
 	comparerNull    = comparerType("NULL")
 	comparerNotNull = comparerType("NOT NULL")
 	comparerLike    = comparerType("LIKE")
-	comparerILike   = comparerType("ILIKE") // case-insensitive LIKE
 )
 
 // IdentityCond represents a default condition that always evaluates to true (1 = 1). Could be useful in cases where
 // it's necessary to handle an array of conditions and at least one condition is required.
-var IdentityCond = newBinaryCondition(NewCol[string]("1", nil), NewCol[string]("1", nil), comparerEq)
+var IdentityCond = NewBinaryCondition(NewCol[string]("1", nil), NewCol[string]("1", nil), comparerEq)
 
 type BinaryCondition struct {
 	left     ParametricSql
@@ -75,7 +75,7 @@ func (b *BinaryCondition) Columns() []Column {
 
 var _ Condition = &BinaryCondition{} // Ensure BinaryCondition implements Condition
 
-func newBinaryCondition(left, right ParametricSql, comparer comparerType) *BinaryCondition {
+func NewBinaryCondition(left, right ParametricSql, comparer comparerType) *BinaryCondition {
 	return &BinaryCondition{left: left, right: right, comparer: comparer}
 }
 
@@ -88,11 +88,11 @@ func (b *BinaryCondition) SQL(p ParamsMap) string {
 }
 
 func (b *BinaryCondition) And(condition Condition) Condition {
-	return newConcatCondition(AndCondConnector, b, condition)
+	return NewConcatCondition(AndCondConnector, b, condition)
 }
 
 func (b *BinaryCondition) Or(condition Condition) Condition {
-	return newConcatCondition(OrCondConnector, b, condition)
+	return NewConcatCondition(OrCondConnector, b, condition)
 }
 
 type BinaryParamCondition[T any] struct {
@@ -111,7 +111,7 @@ func (b *BinaryParamCondition[T]) Columns() []Column {
 
 var _ Condition = &BinaryParamCondition[any]{} // Ensure BinaryParamCondition implements Condition
 
-func newBinaryParamCondition[T any](col ParametricSql, param T, comparer comparerType) *BinaryParamCondition[T] {
+func NewBinaryParamCondition[T any](col ParametricSql, param T, comparer comparerType) *BinaryParamCondition[T] {
 	return &BinaryParamCondition[T]{col: col, param: param, comparer: comparer}
 }
 
@@ -127,56 +127,12 @@ func (b *BinaryParamCondition[T]) SQL(params ParamsMap) string {
 }
 
 func (b *BinaryParamCondition[T]) And(condition Condition) Condition {
-	return newConcatCondition(AndCondConnector, b, condition)
+	return NewConcatCondition(AndCondConnector, b, condition)
 }
 
 func (b *BinaryParamCondition[T]) Or(condition Condition) Condition {
-	return newConcatCondition(OrCondConnector, b, condition)
+	return NewConcatCondition(OrCondConnector, b, condition)
 }
-
-// type InArrayCondition[T any] struct {
-// 	col   ParametricSql
-// 	array []T
-// }
-
-// func (i *InArrayCondition[T]) Columns() []Column {
-// 	var cols []Column
-// 	if col, ok := i.col.(Column); ok {
-// 		cols = append(cols, col)
-// 	}
-// 	return cols
-// }
-
-// var _ Condition = &InArrayCondition[any]{} // Ensure InArrayCondition implements Condition
-
-// func newInArrayCondition[T any](col ParametricSql, array []T) *InArrayCondition[T] {
-// 	return &InArrayCondition[T]{col: col, array: array}
-// }
-
-// func (i *InArrayCondition[T]) SQL(params ParamsMap) string {
-// 	paramsStr := make([]string, len(i.array))
-// 	for ix, pItem := range i.array {
-// 		// If the parameter is not already in the map, add it
-// 		if _, ok := params[pItem]; !ok {
-// 			params[pItem] = len(params) + 1
-// 		}
-// 		order := params[pItem]	
-// 		paramsStr[ix] = GetDialect().Placeholder(order)
-// 	}
-// 	allParams := strings.Join(paramsStr, ", ")
-
-// 	colSql, _ := i.col.SqlWithParams(params)
-
-// 	return fmt.Sprintf("%s IN (%s)", colSql, allParams)
-// }
-
-// func (i *InArrayCondition[T]) And(condition Condition) Condition {
-// 	return newConcatCondition(AndCondConnector, i, condition)
-// }
-
-// func (i *InArrayCondition[T]) Or(condition Condition) Condition {
-// 	return newConcatCondition(OrCondConnector, i, condition)
-// }
 
 type InCondition struct {
 	col     ParametricSql
@@ -208,11 +164,11 @@ func (i *InCondition) SQL(params ParamsMap) string {
 }
 
 func (i *InCondition) And(condition Condition) Condition {
-	return newConcatCondition(AndCondConnector, i, condition)
+	return NewConcatCondition(AndCondConnector, i, condition)
 }
 
 func (i *InCondition) Or(condition Condition) Condition {
-	return newConcatCondition(OrCondConnector, i, condition)
+	return NewConcatCondition(OrCondConnector, i, condition)
 }
 
 type IsCondition struct {
@@ -240,11 +196,11 @@ func (i IsCondition) SQL(params ParamsMap) string {
 }
 
 func (i IsCondition) And(condition Condition) Condition {
-	return newConcatCondition(AndCondConnector, i, condition)
+	return NewConcatCondition(AndCondConnector, i, condition)
 }
 
 func (i IsCondition) Or(condition Condition) Condition {
-	return newConcatCondition(OrCondConnector, i, condition)
+	return NewConcatCondition(OrCondConnector, i, condition)
 }
 
 type ExistsCondition struct {
@@ -271,9 +227,9 @@ func (e *ExistsCondition) SQL(paramsMap ParamsMap) string {
 }
 
 func (e *ExistsCondition) And(condition Condition) Condition {
-	return newConcatCondition(AndCondConnector, e, condition)
+	return NewConcatCondition(AndCondConnector, e, condition)
 }
 
 func (e *ExistsCondition) Or(condition Condition) Condition {
-	return newConcatCondition(OrCondConnector, e, condition)
+	return NewConcatCondition(OrCondConnector, e, condition)
 }

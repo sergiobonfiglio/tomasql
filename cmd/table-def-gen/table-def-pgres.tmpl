@@ -1,0 +1,7 @@
+{{- define "column-field" }}
+    {{ .Name }} *pgres.PGCol[{{ .Type }}]
+{{- end }}
+
+{{- define "column-init" }}
+	tDef.{{ .Name }} = pgres.Wrap({{TomasqlPrefix}}NewCol[{{ .Type }}]("{{ .SqlName }}", tDef))
+{{- end }}

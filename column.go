@@ -11,9 +11,7 @@ type Comparable interface {
 	IsNull() Condition
 	IsNotNull() Condition
 	Like(other ParametricSql) Condition
-	LikeParam(pattern string) Condition
-	// ILike(other ParametricSql) Condition
-	// ILikeParam(pattern string) Condition
+	LikeParam(pattern string) Condition	
 }
 
 type ComparableParam[T any] interface {
