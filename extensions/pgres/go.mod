@@ -1,4 +1,4 @@
-module github.com/sergiobonfiglio/tomasql/dialects/pgres
+module github.com/sergiobonfiglio/tomasql/extensions/pgres
 
 go 1.23
 

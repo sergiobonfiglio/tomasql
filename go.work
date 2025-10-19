@@ -6,4 +6,4 @@ use ./cmd/table-def-gen
 
 use ./example-app
 
-use ./dialects/pgres
+use ./extensions/pgres

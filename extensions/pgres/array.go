@@ -8,20 +8,6 @@ import (
 	"github.com/sergiobonfiglio/tomasql"
 )
 
-type PostgresDialect struct{}
-
-var _ tomasql.Dialect = (*PostgresDialect)(nil)
-
-// ArrayToSQL implements tomasql.Dialect.
-func (p *PostgresDialect) ArrayToSQL(array any) tomasql.ParametricSql {
-	panic("unimplemented")
-}
-
-// Placeholder implements tomasql.Dialect.
-func (p *PostgresDialect) Placeholder(position int) string {
-	return fmt.Sprintf("$%d", position)
-}
-
 type sqlableArray struct {
 	array  sql.Scanner
 	params tomasql.ParamsMap

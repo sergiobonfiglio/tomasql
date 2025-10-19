@@ -2,6 +2,9 @@ package tomasql
 
 type Dialect interface {
 
+	// Name returns the name of the dialect (e.g., "standard", "postgres")
+	Name() string
+
 	// // QuoteIdentifier quotes table/column names (e.g., users -> "users" or `users`)
 	// QuoteIdentifier(identifier string) string
 
@@ -31,6 +34,11 @@ type standardDialect struct {
 }
 
 var _ Dialect = (*standardDialect)(nil)
+
+
+func (d *standardDialect) Name() string {
+	return "standard"
+}
 
 func (d *standardDialect) Placeholder(_ int) string {
 	return "?"
