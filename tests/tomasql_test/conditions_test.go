@@ -113,7 +113,7 @@ func TestConditions(t *testing.T) {
 		},
 		{
 			name: "all",
-			tests: []test{			
+			tests: []test{
 				{
 					want: "account.id = ALL(SELECT shopping_cart.owner_id FROM shopping_cart)",
 					got:  Account.Id.EqAll(Select(ShoppingCart.OwnerId).From(ShoppingCart).AsSubQuery()).SQL(ParamsMap{}),

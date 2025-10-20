@@ -8,7 +8,7 @@ func GetDialect() *PostgresDialect {
 	return pgresDialect
 }
 
-// SetDialect sets the Postgres dialect as the current tomasql dialect. 
+// SetDialect sets the Postgres dialect as the current tomasql dialect.
 // Equivalent to calling tomasql.SetDialect(&PostgresDialect{}).
 func SetDialect() {
 	tomasql.SetDialect(&PostgresDialect{})

@@ -29,7 +29,6 @@ type standardDialect struct {
 
 var _ Dialect = (*standardDialect)(nil)
 
-
 func (d *standardDialect) Name() string {
 	return "standard"
 }
