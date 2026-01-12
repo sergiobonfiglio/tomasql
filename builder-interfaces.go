@@ -39,6 +39,7 @@ type BuilderWithJoin interface {
 
 type BuilderWithWhere interface {
 	SubQueryable
+	GroupBy(ParametricSql, ...ParametricSql) BuilderWithGroupBy
 	OrderBy(SortColumn, ...SortColumn) BuilderWithOrderBy
 }
 
@@ -47,7 +48,10 @@ type BuilderWithGroupBy interface {
 	Having(Condition) BuilderWithHaving
 }
 
-type BuilderWithHaving BuilderWithWhere
+type BuilderWithHaving interface {
+	SubQueryable
+	OrderBy(SortColumn, ...SortColumn) BuilderWithOrderBy
+}
 
 type BuilderWithOrderBy interface {
 	SubQueryable

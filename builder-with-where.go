@@ -24,6 +24,10 @@ func (b *builderWithWhere) AsSubQuery() SQLable {
 	return newWithOptionalAlias(b, nil)
 }
 
+func (b *builderWithWhere) GroupBy(column ParametricSql, columns ...ParametricSql) BuilderWithGroupBy {
+	return newBuilderWithGroupBy(b, append([]ParametricSql{column}, columns...), nil)
+}
+
 func (b *builderWithWhere) OrderBy(column SortColumn, column2 ...SortColumn) BuilderWithOrderBy {
 	return newBuilderWithOrderBy(b, append([]SortColumn{column}, column2...))
 }

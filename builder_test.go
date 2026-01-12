@@ -287,11 +287,13 @@ func TestBuilder(t *testing.T) {
 			tests: []test{
 				{
 					want: "SELECT account.id, COUNT(1) AS cnt FROM account " +
+						"WHERE account.id > " + GetDialect().Placeholder(1) + " " +
 						"GROUP BY account.id HAVING COUNT(1) > " + GetDialect().Placeholder(1),
 					got: func() string {
 						sql, _ := Select(Account.Id, Count().As("cnt")).
 							From(Account).
-							GroupBy(Account.Id).
+							Where(Account.Id.GtParam(0)).
+							GroupBy(Account.Id).							
 							Having(Count().GtParam(1)).
 							SQL()
 						return sql
