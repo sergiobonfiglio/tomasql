@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"flag"
+	"fmt"
 	"go/format"
 	"html/template"
 	"log"
@@ -31,6 +32,7 @@ func main() {
 	tomasqlImportModeFlag := flag.String("tomasql-import-mode", "full", "How to import tomasql package: 'full' (tomasql.Type), 'dot' (. import), 'none' (no import)")
 	postgresImageFlag := flag.String("postgres-image", "postgres:latest", "Postgres image to use for tables generation (default: postgres:latest)")
 	withPgresExtensionsFlag := flag.Bool("with-pgres-extensions", false, "If true, the generated tables definitions will include pgres extensions (default: false)")
+	ignoreUnknownTypesFlag := flag.Bool("ignore-unknown-types", false, "If true, skip columns with unknown types instead of failing (default: false)")
 
 	flag.Parse()
 
@@ -76,7 +78,7 @@ func main() {
 		panic(err)
 	}
 
-	tableDefData, err := getTableDefinitionFromTestDB(container, pkgName)
+	tableDefData, err := getTableDefinitionFromTestDB(container, pkgName, *ignoreUnknownTypesFlag)
 	if err != nil {
 		panic(err)
 	}
@@ -129,7 +131,7 @@ func main() {
 	}
 }
 
-func getTableDefinitionFromTestDB(container *sqlx.DB, pkgName string) (*TemplateData, error) {
+func getTableDefinitionFromTestDB(container *sqlx.DB, pkgName string, ignoreUnknownTypes bool) (*TemplateData, error) {
 	type row struct {
 		TableName     string `db:"table_name"`
 		ColumnName    string `db:"column_name"`
@@ -183,7 +185,15 @@ ORDER BY 1, 2
 			data.Tables = append(data.Tables, currTable)
 		}
 		// TODO: constants for enums?
-		mappedType := psqlTypeToGo(item.BaseType)
+		mappedType, err := psqlTypeToGo(item.BaseType)
+		if err != nil {
+			if ignoreUnknownTypes {
+				log.Printf("Skipping column %s.%s: %v", item.TableName, item.ColumnName, err)
+				continue
+			} else {
+				return nil, err
+			}
+		}
 		if idx := strings.Index(mappedType, "."); idx > 0 {
 			// add import for types that need it (e.g. time.Time), assuming only standard library packages for now
 			pkgPart := mappedType[:idx]
@@ -208,42 +218,42 @@ ORDER BY 1, 2
 	return data, nil
 }
 
-func psqlTypeToGo(psqlType string) string {
+func psqlTypeToGo(psqlType string) (string, error) {
 	switch psqlType {
 	case "bool":
-		return "bool"
+		return "bool", nil
 	case "float4":
-		return "float32"
+		return "float32", nil
 	case "float8":
-		return "float64"
+		return "float64", nil
 	case "int2":
-		return "int16"
+		return "int16", nil
 	case "int4":
-		return "int"
+		return "int", nil
 	case "int8":
-		return "int64"
+		return "int64", nil
 	case "uuid":
-		return "string"
+		return "string", nil
 	case "bpchar":
-		return "string"
+		return "string", nil
 	case "string":
-		return "string"
+		return "string", nil
 	case "text":
-		return "string"
+		return "string", nil
 	case "varchar":
-		return "string"
+		return "string", nil
 	case "numeric":
 		// numeric/decimal: defaulting to float64; consider using a fixed-point/decimal type if precision is critical
-		return "float64"
+		return "float64", nil
 	case "timestamp":
-		return "time.Time"
+		return "time.Time", nil
 	case "timestamptz":
-		return "time.Time"
+		return "time.Time", nil
 	case "date":
-		return "time.Time"
+		return "time.Time", nil
 
 	default:
-		panic("Unknown type: " + psqlType)
+		return "", fmt.Errorf("unknown type: %s", psqlType)
 	}
 }
 
@@ -347,8 +357,6 @@ type Link struct {
 	ToTable    string
 	ToColumn   string
 }
-
-
 
 // Helper function to execute template and format the output
 func executeAndFormat(tmpl *template.Template, data interface{}, outputPath string) error {

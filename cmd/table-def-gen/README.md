@@ -80,6 +80,7 @@ The generator currently supports PostgreSQL databases and uses the following par
 | `--tomasql-import-mode` | string | No       | `full`                     | How to import tomasql package: 'full' (tomasql.Type), 'dot' (. import), 'none' (no import). |
 | `--postgres-image`   | string | No       | `postgres:latest`          | Postgres Docker image to use for tables generation.                                   |
 | `--with-pgres-extensions`   | bool | No       | `false`          | Generates tables with Postgres columns so that Postgres specific methods can be used                                    |
+| `--ignore-unknown-types` | bool | No       | `false`                    | If true, skip columns with unknown types instead of failing. Skipped columns will be logged. |
 | `--help`             | bool   | No       | `false`                    | Show help message and exit.                                                           |
 
 #### Example
