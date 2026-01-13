@@ -26,6 +26,48 @@ func TestFuncColumn(t *testing.T) {
 			},
 		},
 		{
+			want: "COUNT(col1)",
+			got: func() string {
+				sql, _ := Count(NewCol[int]("col1", nil)).SqlWithParams(ParamsMap{})
+				return sql
+			},
+		},
+		{
+			want: "COUNT(col1) AS c2",
+			got: func() string {
+				sql, _ := Count(NewCol[int]("col1", nil)).As("c2").SqlWithParams(ParamsMap{})
+				return sql
+			},
+		},
+		{
+			want: "COUNT(DISTINCT col1)",
+			got: func() string {
+				sql, _ := CountDistinct(NewCol[int]("col1", nil)).SqlWithParams(ParamsMap{})
+				return sql
+			},
+		},
+		{
+			want: "COUNT(DISTINCT col1) AS cd1",
+			got: func() string {
+				sql, _ := CountDistinct(NewCol[int]("col1", nil)).As("cd1").SqlWithParams(ParamsMap{})
+				return sql
+			},
+		},
+		{
+			want: "COUNT(DISTINCT col1, col2)",
+			got: func() string {
+				sql, _ := CountDistinct(NewCol[int]("col1", nil), NewCol[int]("col2", nil)).SqlWithParams(ParamsMap{})
+				return sql
+			},
+		},
+		{
+			want: "COUNT(DISTINCT col1, col2, col3) AS cd2",
+			got: func() string {
+				sql, _ := CountDistinct(NewCol[int]("col1", nil), NewCol[int]("col2", nil), NewCol[int]("col3", nil)).As("cd2").SqlWithParams(ParamsMap{})
+				return sql
+			},
+		},
+		{
 			want: "EXISTS(SELECT 1)",
 			got: func() string {
 				sql, _ := Exists(Select(NewFixedCol(1, nil))).SqlWithParams(ParamsMap{})
@@ -126,4 +168,10 @@ func TestFuncColumn(t *testing.T) {
 			require.Equal(t, tt.want, tt.got())
 		})
 	}
+}
+
+func TestCountPanicOnMultipleColumns(t *testing.T) {
+	require.Panics(t, func() {
+		Count(NewCol[int]("col1", nil), NewCol[int]("col2", nil))
+	}, "Count() should panic when passed more than 1 column")
 }

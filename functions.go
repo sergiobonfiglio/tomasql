@@ -2,8 +2,20 @@ package tomasql
 
 import "strings"
 
-func Count() FuncColumn[int] {
-	return newFuncCol[int]("COUNT", NewCol[int]("1", nil))
+func Count(col ...ParametricSql) FuncColumn[int] {
+	if len(col) > 1 {
+		panic("Count() accepts at most 1 column")
+	}
+	if len(col) == 0 {
+		return newFuncCol[int]("COUNT", NewCol[int]("1", nil))
+	}
+	return newFuncCol[int]("COUNT", col[0])
+}
+
+func CountDistinct(col ParametricSql, otherCols ...ParametricSql) FuncColumn[int] {
+	allCols := append([]ParametricSql{col}, otherCols...)
+	colsPart := newMultiParametricSql(", ", allCols...)
+	return newFuncCol[int]("COUNT", newMultiParametricSql("", []ParametricSql{NewFixedCol("DISTINCT ", nil), colsPart}...))
 }
 
 func Exists(subQuery ParametricSql) FuncColumn[bool] {

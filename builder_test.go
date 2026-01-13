@@ -293,7 +293,7 @@ func TestBuilder(t *testing.T) {
 						sql, _ := Select(Account.Id, Count().As("cnt")).
 							From(Account).
 							Where(Account.Id.GtParam(0)).
-							GroupBy(Account.Id).							
+							GroupBy(Account.Id).
 							Having(Count().GtParam(1)).
 							SQL()
 						return sql
@@ -309,6 +309,39 @@ func TestBuilder(t *testing.T) {
 							GroupBy(Account.Id).
 							Having(Count().GtParam(1)).
 							OrderBy(Account.Id.Asc()).
+							SQL()
+						return sql
+					}(),
+				},
+				{
+					want: "SELECT account.id, COUNT(account.uuid) AS cnt FROM account " +
+						"GROUP BY account.id",
+					got: func() string {
+						sql, _ := Select(Account.Id, Count(Account.Uuid).As("cnt")).
+							From(Account).
+							GroupBy(Account.Id).
+							SQL()
+						return sql
+					}(),
+				},
+				{
+					want: "SELECT account.id, COUNT(DISTINCT account.uuid) AS cnt FROM account " +
+						"GROUP BY account.id",
+					got: func() string {
+						sql, _ := Select(Account.Id, CountDistinct(Account.Uuid).As("cnt")).
+							From(Account).
+							GroupBy(Account.Id).
+							SQL()
+						return sql
+					}(),
+				},
+				{
+					want: "SELECT account.id, COUNT(DISTINCT account.uuid, account.type) AS cnt FROM account " +
+						"GROUP BY account.id",
+					got: func() string {
+						sql, _ := Select(Account.Id, CountDistinct(Account.Uuid, Account.Type).As("cnt")).
+							From(Account).
+							GroupBy(Account.Id).
 							SQL()
 						return sql
 					}(),
