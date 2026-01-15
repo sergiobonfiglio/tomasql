@@ -223,6 +223,28 @@ func TestBuilder(t *testing.T) {
 						return sql
 					}(),
 				},
+				{
+					want: "SELECT account.id, COUNT(1) AS cnt FROM account GROUP BY account.id ORDER BY cnt ASC",
+					got: func() string {
+						sql, _ := Select(Account.Id, Count().As("cnt")).
+							From(Account).
+							GroupBy(Account.Id).
+							OrderBy(Count().As("cnt").Asc()).
+							SQL()
+						return sql
+					}(),
+				},
+				{
+					want: "SELECT account.id, COUNT(1) FROM account GROUP BY account.id ORDER BY COUNT(1) ASC",
+					got: func() string {
+						sql, _ := Select(Account.Id, Count()).
+							From(Account).
+							GroupBy(Account.Id).
+							OrderBy(Count().Asc()).
+							SQL()
+						return sql
+					}(),
+				},
 			},
 		},
 		{

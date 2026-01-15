@@ -8,7 +8,7 @@ type Table interface {
 	// able to access specific columns and generics won't work due to type erasure
 	// As(x string)
 	Alias() *string
-	SQLable
+	ParametricSql
 }
 
 type sqlableTable struct {
@@ -27,11 +27,6 @@ func NewSqlableTable(t Table) *sqlableTable {
 	return newSqlableTable(t)
 }
 
-func (s *sqlableTable) SQL() (sql string, params []any) {
-	sql, paramsMap := s.SqlWithParams(ParamsMap{})
-	return sql, paramsMap.ToSlice()
-}
-
 func (s *sqlableTable) SqlWithParams(params ParamsMap) (string, ParamsMap) {
 	tRef := s.table.TableName()
 	if s.table.Alias() != nil {
@@ -40,7 +35,7 @@ func (s *sqlableTable) SqlWithParams(params ParamsMap) (string, ParamsMap) {
 	return tRef, params
 }
 
-var _ SQLable = &sqlableTable{}
+var _ ParametricSql = &sqlableTable{}
 
 type tableDef struct {
 	*withOptionalAlias
@@ -61,3 +56,30 @@ func NewTableFromSubQuery(subQuery SQLable, alias string, columns []Column) (Tab
 
 	return table, table.columns
 }
+
+// tableRefWrapper is a simple wrapper around a Table that renders a table
+// in reference usages (e.g. in column references or JOIN clauses).
+type tableRefWrapper struct {
+	table Table
+}
+
+// Alias implements Table.
+func (t *tableRefWrapper) Alias() *string {
+	return t.table.Alias()
+}
+
+// SqlWithParams implements Table.
+func (t *tableRefWrapper) SqlWithParams(paramsMap ParamsMap) (string, ParamsMap) {
+	if t.table.Alias() != nil {
+		return *t.table.Alias(), paramsMap
+	}
+	return t.table.TableName(), paramsMap
+}
+
+// TableName implements Table.
+func (t *tableRefWrapper) TableName() string {
+	return t.table.TableName()
+}
+
+// TODO: do we need to implement the interface methods other than SqlWithParams?
+var _ Table = &tableRefWrapper{}

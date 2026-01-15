@@ -2,7 +2,7 @@ package tomasql
 
 import "strings"
 
-func Count(col ...ParametricSql) FuncColumn[int] {
+func Count(col ...ParametricSql) *FuncCol[int] {
 	if len(col) > 1 {
 		panic("Count() accepts at most 1 column")
 	}
@@ -12,58 +12,58 @@ func Count(col ...ParametricSql) FuncColumn[int] {
 	return newFuncCol[int]("COUNT", col[0])
 }
 
-func CountDistinct(col ParametricSql, otherCols ...ParametricSql) FuncColumn[int] {
+func CountDistinct(col ParametricSql, otherCols ...ParametricSql) *FuncCol[int] {
 	allCols := append([]ParametricSql{col}, otherCols...)
 	colsPart := newMultiParametricSql(", ", allCols...)
 	return newFuncCol[int]("COUNT", newMultiParametricSql("", []ParametricSql{NewFixedCol("DISTINCT ", nil), colsPart}...))
 }
 
-func Exists(subQuery ParametricSql) FuncColumn[bool] {
+func Exists(subQuery ParametricSql) *FuncCol[bool] {
 	return newFuncCol[bool]("EXISTS", subQuery)
 }
 
-func Sum[T any](col ParametricSql) FuncColumn[T] {
+func Sum[T any](col ParametricSql) *FuncCol[T] {
 	return newFuncCol[T]("SUM", col)
 }
 
-func Avg[T any](col ParametricSql) FuncColumn[T] {
+func Avg[T any](col ParametricSql) *FuncCol[T] {
 	return newFuncCol[T]("AVG", col)
 }
 
-func Min[T any](col ParametricSql) FuncColumn[T] {
+func Min[T any](col ParametricSql) *FuncCol[T] {
 	return newFuncCol[T]("MIN", col)
 }
 
-func Max[T any](col ParametricSql) FuncColumn[T] {
+func Max[T any](col ParametricSql) *FuncCol[T] {
 	return newFuncCol[T]("MAX", col)
 }
 
-func Upper(col ParametricSql) FuncColumn[string] {
+func Upper(col ParametricSql) *FuncCol[string] {
 	return newFuncCol[string]("UPPER", col)
 }
 
-func Lower(col ParametricSql) FuncColumn[string] {
+func Lower(col ParametricSql) *FuncCol[string] {
 	return newFuncCol[string]("LOWER", col)
 }
 
-func Length(col ParametricSql) FuncColumn[int] {
+func Length(col ParametricSql) *FuncCol[int] {
 	return newFuncCol[int]("LENGTH", col)
 }
 
-func Coalesce[T any](col1 ParametricSql, other ...ParametricSql) FuncColumn[T] {
+func Coalesce[T any](col1 ParametricSql, other ...ParametricSql) *FuncCol[T] {
 	return newFuncCol[T]("COALESCE", newMultiParametricSql(", ", append([]ParametricSql{col1}, other...)...))
 }
 
-func Round(col ParametricSql, decimals int) FuncColumn[float64] {
+func Round(col ParametricSql, decimals int) *FuncCol[float64] {
 	return newFuncCol[float64]("ROUND", newMultiParametricSql(", ",
 		[]ParametricSql{col, NewFixedCol(decimals, nil)}...))
 }
 
-func Abs[T any](col ParametricSql) FuncColumn[T] {
+func Abs[T any](col ParametricSql) *FuncCol[T] {
 	return newFuncCol[T]("ABS", col)
 }
 
-func Trim(col ParametricSql) FuncColumn[string] {
+func Trim(col ParametricSql) *FuncCol[string] {
 	return newFuncCol[string]("TRIM", col)
 }
 
@@ -91,140 +91,160 @@ func newMultiParametricSql(separator string, sqlables ...ParametricSql) Parametr
 	}
 }
 
-type FuncColumn[T any] interface {
-	As(string) ParametricSql
+type FuncColumn interface {
+	As(string) FuncColumn
 	Alias() *string
+	Asc() SortColumn
+	Desc() SortColumn
+
 	ParametricSql
 	Comparable
 	SetComparable
-	ComparableParam[T]
 }
 
-type funcCol[T any] struct {
+type FuncCol[T any] struct {
 	alias    *string // alias for the function column
 	funcName string  // name of the function, e.g. "COUNT", "SUM", etc.
 	inner    ParametricSql
+	ComparableParam[T]
 }
 
-func (f *funcCol[T]) As(s string) ParametricSql {
+var _ FuncColumn = &FuncCol[any]{}
+
+func (f *FuncCol[T]) As(s string) FuncColumn {
 	f.alias = &s
 	return f
 }
 
-func (f *funcCol[T]) Alias() *string {
+func (f *FuncCol[T]) Alias() *string {
 	return f.alias
 }
 
-func (f *funcCol[T]) Eq(other ParametricSql) Condition {
+func (f *FuncCol[T]) Asc() SortColumn {
+	return &SortCol[T]{
+		col:       nil,
+		subQuery:  funcColRefWrapper[T]{funcCol: f},
+		direction: OrderByAsc,
+	}
+}
+func (f *FuncCol[T]) Desc() SortColumn {
+	return &SortCol[T]{
+		col:       nil,
+		subQuery:  funcColRefWrapper[T]{funcCol: f},
+		direction: OrderByDesc,
+	}
+}
+
+func (f *FuncCol[T]) Eq(other ParametricSql) Condition {
 	return NewBinaryCondition(f, other, comparerEq)
 }
 
-func (f *funcCol[T]) EqParam(other T) Condition {
+func (f *FuncCol[T]) EqParam(other T) Condition {
 	return NewBinaryParamCondition(f, other, comparerEq)
 }
 
-func (f *funcCol[T]) Gt(other ParametricSql) Condition {
+func (f *FuncCol[T]) Gt(other ParametricSql) Condition {
 	return NewBinaryCondition(f, other, comparerGt)
 }
 
-func (f *funcCol[T]) GtParam(other T) Condition {
+func (f *FuncCol[T]) GtParam(other T) Condition {
 	return NewBinaryParamCondition(f, other, comparerGt)
 }
 
-func (f *funcCol[T]) Ge(other ParametricSql) Condition {
+func (f *FuncCol[T]) Ge(other ParametricSql) Condition {
 	return NewBinaryCondition(f, other, comparerGe)
 }
 
-func (f *funcCol[T]) GeParam(other T) Condition {
+func (f *FuncCol[T]) GeParam(other T) Condition {
 	return NewBinaryParamCondition(f, other, comparerGe)
 }
 
-func (f *funcCol[T]) Lt(other ParametricSql) Condition {
+func (f *FuncCol[T]) Lt(other ParametricSql) Condition {
 	return NewBinaryCondition(f, other, comparerLt)
 }
 
-func (f *funcCol[T]) LtParam(other T) Condition {
+func (f *FuncCol[T]) LtParam(other T) Condition {
 	return NewBinaryParamCondition(f, other, comparerLt)
 }
 
-func (f *funcCol[T]) Le(other ParametricSql) Condition {
+func (f *FuncCol[T]) Le(other ParametricSql) Condition {
 	return NewBinaryCondition(f, other, comparerLe)
 }
 
-func (f *funcCol[T]) LeParam(other T) Condition {
+func (f *FuncCol[T]) LeParam(other T) Condition {
 	return NewBinaryParamCondition(f, other, comparerLe)
 }
 
-func (f *funcCol[T]) Like(other ParametricSql) Condition {
+func (f *FuncCol[T]) Like(other ParametricSql) Condition {
 	return NewBinaryCondition(f, other, comparerLike)
 }
 
-func (f *funcCol[T]) LikeParam(pattern string) Condition {
+func (f *FuncCol[T]) LikeParam(pattern string) Condition {
 	return NewBinaryParamCondition(f, pattern, comparerLike)
 }
 
-func (f *funcCol[T]) IsNull() Condition {
+func (f *FuncCol[T]) IsNull() Condition {
 	return newIsCondition(f, comparerNull)
 }
 
-func (f *funcCol[T]) IsNotNull() Condition {
+func (f *FuncCol[T]) IsNotNull() Condition {
 	return newIsCondition(f, comparerNotNull)
 }
 
-func (f *funcCol[T]) In(sqlable ParametricSql) Condition {
+func (f *FuncCol[T]) In(sqlable ParametricSql) Condition {
 	return newInCondition(f, sqlable)
 }
 
-func (f *funcCol[T]) EqAny(sqlable ParametricSql) Condition {
+func (f *FuncCol[T]) EqAny(sqlable ParametricSql) Condition {
 	return newAnyCondition(f, comparerEq, sqlable)
 }
 
-func (f *funcCol[T]) EqAll(sqlable ParametricSql) Condition {
+func (f *FuncCol[T]) EqAll(sqlable ParametricSql) Condition {
 	return newAllCondition(f, comparerEq, sqlable)
 }
 
-func (f *funcCol[T]) GtAny(sqlable ParametricSql) Condition {
+func (f *FuncCol[T]) GtAny(sqlable ParametricSql) Condition {
 	return newAnyCondition(f, comparerGt, sqlable)
 }
 
-func (f *funcCol[T]) GtAll(sqlable ParametricSql) Condition {
+func (f *FuncCol[T]) GtAll(sqlable ParametricSql) Condition {
 	return newAllCondition(f, comparerGt, sqlable)
 }
 
-func (f *funcCol[T]) GeAny(sqlable ParametricSql) Condition {
+func (f *FuncCol[T]) GeAny(sqlable ParametricSql) Condition {
 	return newAnyCondition(f, comparerGe, sqlable)
 }
 
-func (f *funcCol[T]) GeAll(sqlable ParametricSql) Condition {
+func (f *FuncCol[T]) GeAll(sqlable ParametricSql) Condition {
 	return newAllCondition(f, comparerGe, sqlable)
 }
 
-func (f *funcCol[T]) LtAny(sqlable ParametricSql) Condition {
+func (f *FuncCol[T]) LtAny(sqlable ParametricSql) Condition {
 	return newAnyCondition(f, comparerLt, sqlable)
 }
 
-func (f *funcCol[T]) LtAll(sqlable ParametricSql) Condition {
+func (f *FuncCol[T]) LtAll(sqlable ParametricSql) Condition {
 	return newAllCondition(f, comparerLt, sqlable)
 }
 
-func (f *funcCol[T]) LeAny(sqlable ParametricSql) Condition {
+func (f *FuncCol[T]) LeAny(sqlable ParametricSql) Condition {
 	return newAnyCondition(f, comparerLe, sqlable)
 }
 
-func (f *funcCol[T]) LeAll(sqlable ParametricSql) Condition {
+func (f *FuncCol[T]) LeAll(sqlable ParametricSql) Condition {
 	return newAllCondition(f, comparerLe, sqlable)
 }
 
-var _ FuncColumn[any] = &funcCol[any]{}
+var _ FuncColumn = &FuncCol[any]{}
 
-func newFuncCol[T any](funcName string, inner ParametricSql) FuncColumn[T] {
-	return &funcCol[T]{
+func newFuncCol[T any](funcName string, inner ParametricSql) *FuncCol[T] {
+	return &FuncCol[T]{
 		funcName: funcName,
 		inner:    inner,
 	}
 }
 
-func (f *funcCol[T]) SqlWithParams(paramsMap ParamsMap) (string, ParamsMap) {
+func (f *FuncCol[T]) SqlWithParams(paramsMap ParamsMap) (string, ParamsMap) {
 	sql := f.funcName + "("
 	var innerSql string
 	innerSql, paramsMap = f.inner.SqlWithParams(paramsMap)
@@ -232,5 +252,22 @@ func (f *funcCol[T]) SqlWithParams(paramsMap ParamsMap) (string, ParamsMap) {
 	if f.Alias() != nil {
 		sql += " AS " + *f.Alias()
 	}
+	return sql, paramsMap
+}
+
+// funcColRefWrapper renders a function column reference (just the alias if present, or the full function expression)
+type funcColRefWrapper[T any] struct {
+	funcCol *FuncCol[T]
+}
+
+func (fcrw funcColRefWrapper[T]) SqlWithParams(paramsMap ParamsMap) (string, ParamsMap) {
+	if fcrw.funcCol.Alias() != nil {
+		return *fcrw.funcCol.Alias(), paramsMap
+	}
+	// If no alias, render the full function expression without " AS ..."
+	sql := fcrw.funcCol.funcName + "("
+	var innerSql string
+	innerSql, paramsMap = fcrw.funcCol.inner.SqlWithParams(paramsMap)
+	sql += innerSql + ")"
 	return sql, paramsMap
 }

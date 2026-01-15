@@ -1,19 +1,5 @@
 package tomasql
 
-// type Builder1 interface {
-// 	// SelectCols selects distinct columns from the table. Equivalent to SelectDistinct but avoids
-// 	// the need to convert Column to ParametricSql.
-// 	SelectCols(first Column, columns ...Column) BuilderWithSelect
-// 	Select(ParametricSql, ...ParametricSql) BuilderWithSelect
-
-// 	// SelectDistinctCols selects distinct columns from the table. Equivalent to SelectDistinct but avoids
-// 	// the need to convert Column to ParametricSql.
-// 	SelectDistinctCols(Column, ...Column) BuilderWithSelect
-// 	SelectDistinct(ParametricSql, ...ParametricSql) BuilderWithSelect
-// 	SelectDistinctAll() BuilderWithSelect
-// 	SelectAll() BuilderWithSelect
-// }
-
 type BuilderWithSelect interface {
 	SubQueryable
 	From(Table) BuilderWithTables
@@ -82,17 +68,8 @@ const (
 )
 
 type SortColumn interface {
-	Name() string
-	Table() Table
-	Direction() SortDirection
-	SQL() string
+	ParametricSql
 
 	// Column returns the underlying Column that this SortColumn represents or nil if it is not a Column (e.g. subquery).
 	Column() Column
-
-	getRef() string
 }
-
-// type Integer interface {
-// 	~int | ~int8 | ~int16 | ~int32 | ~int64
-// }

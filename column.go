@@ -1,6 +1,8 @@
 package tomasql
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Comparable interface {
 	Eq(other ParametricSql) Condition
@@ -50,9 +52,8 @@ type Column interface {
 	Desc() SortColumn
 
 	getType() colTypeTag
-	getRef() string
 
-	SQLable
+	ParametricSql
 	Comparable
 	SetComparable
 }
@@ -82,17 +83,25 @@ type Col[T any] struct {
 	ComparableParam[T]
 }
 
-func (c Col[T]) SQL() (sql string, params []any) {
-	sql, paramsMap := c.SqlWithParams(nil)
-	return sql, paramsMap.ToSlice()
+func (c Col[T]) SqlWithParams(params ParamsMap) (string, ParamsMap) {
+
+	if c.Table() == nil {
+		// this is the case for "*"
+		return c.Name(), params
+	}
+
+	table := c.getTableForRef()
+	var tRef string
+	tRef, params = table.SqlWithParams(params)
+
+	if c.Alias() == nil {
+		return tRef + "." + c.Name(), params
+	}
+	return tRef + "." + c.Name() + " AS " + *c.Alias(), params
 }
 
-func (c Col[T]) SqlWithParams(params ParamsMap) (string, ParamsMap) {
-	colRef := c.getRef()
-	if c.Alias() != nil {
-		colRef += " AS " + *c.Alias()
-	}
-	return colRef, params
+func (c Col[T]) getTableForRef() tableRefWrapper {
+	return tableRefWrapper{table: c.Table()}
 }
 
 var (
@@ -130,48 +139,16 @@ func (c Col[T]) Desc() SortColumn {
 	}
 }
 
-func (c Col[T]) getRef() string {
-	if c.Table() == nil {
-		// this is the case for "*"
-		return c.Name()
+// colRefWrapper renders a column reference (just the name or alias (plus table name or alias), no "AS")
+type colRefWrapper struct {
+	col Column
+}
+
+func (crw colRefWrapper) SqlWithParams(params ParamsMap) (string, ParamsMap) {
+	if crw.col.Alias() != nil {
+		return *crw.col.Alias(), params
 	}
-
-	tRef := c.Table().TableName()
-	if c.Table().Alias() != nil {
-		tRef = *c.Table().Alias()
-	}
-	return tRef + "." + c.Name()
-}
-
-type SortCol[T any] struct {
-	col       Column
-	direction SortDirection
-}
-
-var _ SortColumn = &SortCol[int]{} // Ensure SortCol implements SortColumn
-
-func (s *SortCol[T]) Name() string {
-	return s.col.Name()
-}
-
-func (s *SortCol[T]) Column() Column {
-	return s.col
-}
-
-func (s *SortCol[T]) Table() Table {
-	return s.col.Table()
-}
-
-func (s *SortCol[T]) getRef() string {
-	return s.col.getRef()
-}
-
-func (s *SortCol[T]) Direction() SortDirection {
-	return s.direction
-}
-
-func (s *SortCol[T]) SQL() string {
-	return s.getRef() + " " + string(s.direction)
+	return crw.col.Name(), params
 }
 
 func NewCol[T any](name string, table Table) *Col[T] {
@@ -227,4 +204,37 @@ func NewFixedCol[T string | Number](val T, alias *string) Column {
 	}
 
 	return col
+}
+
+type SortCol[T any] struct {
+	// either col or subQuery will be set
+	col       Column
+	subQuery  ParametricSql
+	direction SortDirection
+}
+
+var _ SortColumn = &SortCol[int]{} // Ensure SortCol implements SortColumn
+
+func (s *SortCol[T]) Column() Column {
+	return s.col
+}
+
+func (s *SortCol[T]) SqlWithParams(params ParamsMap) (string, ParamsMap) {
+
+	if s.subQuery != nil {
+		subQueryStr, pm := s.subQuery.SqlWithParams(params)
+		return fmt.Sprintf("%s %s", subQueryStr, string(s.direction)), pm
+	}
+
+	sortRef := ""
+	if s.col.Table() != nil {
+		table := tableRefWrapper{table: s.col.Table()}
+		sortRef, params = table.SqlWithParams(params)
+		sortRef += "."
+	}
+
+	var colRef string
+	colRef, params = colRefWrapper{col: s.col}.SqlWithParams(params)
+
+	return sortRef + colRef + " " + string(s.direction), params
 }

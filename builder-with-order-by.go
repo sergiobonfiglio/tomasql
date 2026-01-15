@@ -55,7 +55,9 @@ func (b *builderWithOrderBy) SqlWithParams(params ParamsMap) (string, ParamsMap)
 		out += " ORDER BY "
 		var orderStr []string
 		for _, col := range b.orderBy {
-			orderStr = append(orderStr, col.SQL())
+			var sortStr string
+			sortStr, b.params = col.SqlWithParams(b.params)
+			orderStr = append(orderStr, sortStr)
 		}
 		out += strings.Join(orderStr, ", ")
 	}
