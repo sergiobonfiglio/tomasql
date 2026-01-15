@@ -175,3 +175,192 @@ func TestCountPanicOnMultipleColumns(t *testing.T) {
 		Count(NewCol[int]("col1", nil), NewCol[int]("col2", nil))
 	}, "Count() should panic when passed more than 1 column")
 }
+
+// TestFuncCol_Comparisons tests comparison operators on function columns
+func TestFuncCol_Comparisons(t *testing.T) {
+	tests := []struct {
+		name     string
+		operator string
+		testFn   func(countFunc *FuncCol[int]) Condition
+	}{
+		{"Eq", "=", func(f *FuncCol[int]) Condition { return f.Eq(NewCol[int]("col1", nil)) }},
+		{"Gt", ">", func(f *FuncCol[int]) Condition { return f.Gt(NewCol[int]("col1", nil)) }},
+		{"Ge", ">=", func(f *FuncCol[int]) Condition { return f.Ge(NewCol[int]("col1", nil)) }},
+		{"Lt", "<", func(f *FuncCol[int]) Condition { return f.Lt(NewCol[int]("col1", nil)) }},
+		{"Le", "<=", func(f *FuncCol[int]) Condition { return f.Le(NewCol[int]("col1", nil)) }},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			countFunc := Count(NewCol[int]("col1", nil))
+			cond := tt.testFn(countFunc)
+
+			sql := cond.SQL(ParamsMap{})
+			require.Equal(t, "COUNT(col1) "+tt.operator+" col1", sql)
+		})
+	}
+}
+
+// TestFuncCol_ComparisonsParam tests parameterized comparisons on function columns
+func TestFuncCol_ComparisonsParam(t *testing.T) {
+	tests := []struct {
+		name     string
+		operator string
+		testFn   func(countFunc *FuncCol[int]) Condition
+	}{
+		{"EqParam", "=", func(f *FuncCol[int]) Condition { return f.EqParam(10) }},
+		{"GtParam", ">", func(f *FuncCol[int]) Condition { return f.GtParam(10) }},
+		{"GeParam", ">=", func(f *FuncCol[int]) Condition { return f.GeParam(10) }},
+		{"LtParam", "<", func(f *FuncCol[int]) Condition { return f.LtParam(10) }},
+		{"LeParam", "<=", func(f *FuncCol[int]) Condition { return f.LeParam(10) }},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			countFunc := Count(NewCol[int]("col1", nil))
+			cond := tt.testFn(countFunc)
+
+			params := ParamsMap{}
+			sql := cond.SQL(params)
+			require.Equal(t, "COUNT(col1) "+tt.operator+" "+GetDialect().Placeholder(1), sql)
+			require.Equal(t, ParamsMap{10: 1}, params)
+		})
+	}
+}
+
+// TestFuncCol_NullChecks tests NULL checks on function columns
+func TestFuncCol_NullChecks(t *testing.T) {
+	t.Run("IsNull", func(t *testing.T) {
+		countFunc := Count(NewCol[int]("col1", nil))
+		cond := countFunc.IsNull()
+
+		sql := cond.SQL(ParamsMap{})
+		require.Equal(t, "COUNT(col1) IS NULL", sql)
+	})
+
+	t.Run("IsNotNull", func(t *testing.T) {
+		countFunc := Count(NewCol[int]("col1", nil))
+		cond := countFunc.IsNotNull()
+
+		sql := cond.SQL(ParamsMap{})
+		require.Equal(t, "COUNT(col1) IS NOT NULL", sql)
+	})
+}
+
+// TestFuncCol_In tests IN condition with function columns
+func TestFuncCol_In(t *testing.T) {
+	countFunc := Count(NewCol[int]("col1", nil))
+	table := &simpleTable{name: "table1"}
+	col2 := NewCol[int]("col2", table)
+	subquery := Select(col2).From(table).AsSubQuery()
+
+	cond := countFunc.In(subquery)
+
+	params := ParamsMap{}
+	sql := cond.SQL(params)
+	require.Equal(t, "COUNT(col1) IN (SELECT table1.col2 FROM table1)", sql)
+}
+
+// TestFuncCol_Like tests LIKE on string function columns
+func TestFuncCol_Like(t *testing.T) {
+	t.Run("Like with column", func(t *testing.T) {
+		upperFunc := Upper(NewCol[string]("col1", nil))
+		cond := upperFunc.Like(NewCol[string]("col2", nil))
+
+		sql := cond.SQL(ParamsMap{})
+		require.Equal(t, "UPPER(col1) LIKE col2", sql)
+	})
+
+	t.Run("LikeParam", func(t *testing.T) {
+		upperFunc := Upper(NewCol[string]("col1", nil))
+		cond := upperFunc.LikeParam("%test%")
+
+		params := ParamsMap{}
+		sql := cond.SQL(params)
+		require.Equal(t, "UPPER(col1) LIKE "+GetDialect().Placeholder(1), sql)
+		require.Equal(t, ParamsMap{"%test%": 1}, params)
+	})
+}
+
+// TestFuncCol_Alias tests alias functionality
+func TestFuncCol_Alias(t *testing.T) {
+	t.Run("Alias not set", func(t *testing.T) {
+		countFunc := Count(NewCol[int]("col1", nil))
+		require.Nil(t, countFunc.Alias())
+	})
+
+	t.Run("Alias set and retrieved", func(t *testing.T) {
+		countFunc := Count(NewCol[int]("col1", nil)).As("cnt")
+		require.NotNil(t, countFunc.Alias())
+		require.Equal(t, "cnt", *countFunc.Alias())
+	})
+
+	t.Run("Alias in SQL", func(t *testing.T) {
+		countFunc := Count(NewCol[int]("col1", nil)).As("cnt")
+		sql, _ := countFunc.SqlWithParams(ParamsMap{})
+		require.Equal(t, "COUNT(col1) AS cnt", sql)
+	})
+}
+
+// TestFuncCol_Sorting tests sorting (Asc, Desc) on function columns
+func TestFuncCol_Sorting(t *testing.T) {
+	t.Run("Asc", func(t *testing.T) {
+		countFunc := Count(NewCol[int]("col1", nil)).As("cnt")
+		sortCol := countFunc.Asc()
+
+		sql, _ := sortCol.SqlWithParams(ParamsMap{})
+		require.Equal(t, "cnt ASC", sql)
+	})
+
+	t.Run("Desc", func(t *testing.T) {
+		countFunc := Count(NewCol[int]("col1", nil)).As("cnt")
+		sortCol := countFunc.Desc()
+
+		sql, _ := sortCol.SqlWithParams(ParamsMap{})
+		require.Equal(t, "cnt DESC", sql)
+	})
+
+	t.Run("Sorting without alias uses function expression", func(t *testing.T) {
+		countFunc := Count(NewCol[int]("col1", nil))
+		sortCol := countFunc.Asc()
+
+		sql, _ := sortCol.SqlWithParams(ParamsMap{})
+		require.Equal(t, "COUNT(col1) ASC", sql)
+	})
+}
+
+// TestFuncCol_QuantifiedComparisons tests ANY/ALL operators on function columns
+func TestFuncCol_QuantifiedComparisons(t *testing.T) {
+	tests := []struct {
+		name     string
+		operator string
+		testFn   func(f *FuncCol[int], subquery SQLable) Condition
+	}{
+		{"EqAny", "= ANY", func(f *FuncCol[int], sq SQLable) Condition { return f.EqAny(sq) }},
+		{"EqAll", "= ALL", func(f *FuncCol[int], sq SQLable) Condition { return f.EqAll(sq) }},
+		{"GtAny", "> ANY", func(f *FuncCol[int], sq SQLable) Condition { return f.GtAny(sq) }},
+		{"GtAll", "> ALL", func(f *FuncCol[int], sq SQLable) Condition { return f.GtAll(sq) }},
+		{"GeAny", ">= ANY", func(f *FuncCol[int], sq SQLable) Condition { return f.GeAny(sq) }},
+		{"GeAll", ">= ALL", func(f *FuncCol[int], sq SQLable) Condition { return f.GeAll(sq) }},
+		{"LtAny", "< ANY", func(f *FuncCol[int], sq SQLable) Condition { return f.LtAny(sq) }},
+		{"LtAll", "< ALL", func(f *FuncCol[int], sq SQLable) Condition { return f.LtAll(sq) }},
+		{"LeAny", "<= ANY", func(f *FuncCol[int], sq SQLable) Condition { return f.LeAny(sq) }},
+		{"LeAll", "<= ALL", func(f *FuncCol[int], sq SQLable) Condition { return f.LeAll(sq) }},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			table := &simpleTable{name: "table1"}
+			col1 := NewCol[int]("col1", table)
+			col2 := NewCol[int]("col2", table)
+			countFunc := Count(col1)
+			subquery := Select(col2).From(table).AsSubQuery()
+
+			cond := tt.testFn(countFunc, subquery)
+
+			params := ParamsMap{}
+			sql := cond.SQL(params)
+			require.Equal(t, "COUNT(table1.col1) "+tt.operator+"(SELECT table1.col2 FROM table1)", sql)
+		})
+	}
+}

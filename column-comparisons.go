@@ -11,11 +11,11 @@ func (c Col[T]) EqParam(other T) Condition {
 }
 
 func (c Col[T]) Neq(other ParametricSql) Condition {
-	return NewBinaryCondition(c, other, comparerEq)
+	return NewBinaryCondition(c, other, comparerNeq)
 }
 
 func (c Col[T]) NeqParam(other T) Condition {
-	return NewBinaryParamCondition(c, other, comparerEq)
+	return NewBinaryParamCondition(c, other, comparerNeq)
 }
 
 func (c Col[T]) Gt(other ParametricSql) Condition {
