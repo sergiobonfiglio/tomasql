@@ -1,5 +1,7 @@
 package tomasql
 
+import "fmt"
+
 type Table interface {
 	TableName() string
 	// Columns() []Column
@@ -27,12 +29,29 @@ func NewSqlableTable(t Table) *sqlableTable {
 	return newSqlableTable(t)
 }
 
-func (s *sqlableTable) SqlWithParams(params ParamsMap) (string, ParamsMap) {
-	tRef := s.table.TableName()
-	if s.table.Alias() != nil {
-		tRef += " AS " + *s.table.Alias()
+func (s *sqlableTable) SqlWithParams(params ParamsMap, ctx RenderContext) (string, ParamsMap) {
+	switch ctx {
+	case DefinitionContext:
+		tRef := s.table.TableName()
+		if s.table.Alias() != nil {
+			tRef += " AS " + *s.table.Alias()
+		}
+		return tRef, params
+	case ReferenceContext:
+		tRef := s.table.TableName()
+		if s.table.Alias() != nil {
+			tRef += " AS " + *s.table.Alias()
+		}
+		return tRef, params
+	case OrderByContext:
+		tRef := s.table.TableName()
+		if s.table.Alias() != nil {
+			tRef += " AS " + *s.table.Alias()
+		}
+		return tRef, params
+	default:
+		panic(fmt.Sprintf("sqlableTable.SqlWithParams: unexpected RenderContext %s", ctx))
 	}
-	return tRef, params
 }
 
 var _ ParametricSql = &sqlableTable{}
@@ -69,11 +88,26 @@ func (t *tableRefWrapper) Alias() *string {
 }
 
 // SqlWithParams implements Table.
-func (t *tableRefWrapper) SqlWithParams(paramsMap ParamsMap) (string, ParamsMap) {
-	if t.table.Alias() != nil {
-		return *t.table.Alias(), paramsMap
+func (t *tableRefWrapper) SqlWithParams(paramsMap ParamsMap, ctx RenderContext) (string, ParamsMap) {
+	switch ctx {
+	case DefinitionContext:
+		if t.table.Alias() != nil {
+			return *t.table.Alias(), paramsMap
+		}
+		return t.table.TableName(), paramsMap
+	case ReferenceContext:
+		if t.table.Alias() != nil {
+			return *t.table.Alias(), paramsMap
+		}
+		return t.table.TableName(), paramsMap
+	case OrderByContext:
+		if t.table.Alias() != nil {
+			return *t.table.Alias(), paramsMap
+		}
+		return t.table.TableName(), paramsMap
+	default:
+		panic(fmt.Sprintf("tableRefWrapper.SqlWithParams: unexpected RenderContext %s", ctx))
 	}
-	return t.table.TableName(), paramsMap
 }
 
 // TableName implements Table.

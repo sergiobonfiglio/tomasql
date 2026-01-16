@@ -32,20 +32,18 @@ func (b *builderWithWhere) OrderBy(column SortColumn, column2 ...SortColumn) Bui
 	return newBuilderWithOrderBy(b, append([]SortColumn{column}, column2...))
 }
 
-func (b *builderWithWhere) SqlWithParams(params ParamsMap) (string, ParamsMap) {
+func (b *builderWithWhere) SqlWithParams(params ParamsMap, ctx RenderContext) (string, ParamsMap) {
 	b.params = params.AddAll(b.params)
 	var sql string
-	sql, b.params = b.prevStage.SqlWithParams(b.params)
-
+	sql, b.params = b.prevStage.SqlWithParams(b.params, ctx)
 	whereStr := ""
 	if b.where != nil {
 		whereStr = " WHERE " + b.where.SQL(b.params)
 	}
-
 	return sql + whereStr, b.params
 }
 
 func (b *builderWithWhere) SQL() (sql string, params []any) {
-	sql, paramsMap := b.SqlWithParams(b.params)
+	sql, paramsMap := b.SqlWithParams(b.params, OutputContext)
 	return sql, paramsMap.ToSlice()
 }

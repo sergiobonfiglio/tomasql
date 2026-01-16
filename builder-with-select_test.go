@@ -88,7 +88,7 @@ func TestBuilderWithSelect_From(t *testing.T) {
 func TestBuilderWithSelect_SqlWithParams(t *testing.T) {
 	t.Run("single column without FROM", func(t *testing.T) {
 		builder := Select(Account.Id)
-		sql, paramsMap := builder.SqlWithParams(ParamsMap{})
+		sql, paramsMap := builder.SQL()
 
 		expected := "SELECT account.id"
 		require.Equal(t, expected, sql)
@@ -97,7 +97,7 @@ func TestBuilderWithSelect_SqlWithParams(t *testing.T) {
 
 	t.Run("single column with FROM", func(t *testing.T) {
 		builder := Select(Account.Id).From(Account)
-		sql, paramsMap := builder.SqlWithParams(ParamsMap{})
+		sql, paramsMap := builder.SQL()
 
 		expected := "SELECT account.id FROM account"
 		require.Equal(t, expected, sql)
@@ -106,7 +106,7 @@ func TestBuilderWithSelect_SqlWithParams(t *testing.T) {
 
 	t.Run("multiple columns without FROM", func(t *testing.T) {
 		builder := Select(Account.Id, Account.Uuid)
-		sql, paramsMap := builder.SqlWithParams(ParamsMap{})
+		sql, paramsMap := builder.SQL()
 
 		expected := "SELECT account.id, account.uuid"
 		require.Equal(t, expected, sql)
@@ -115,7 +115,7 @@ func TestBuilderWithSelect_SqlWithParams(t *testing.T) {
 
 	t.Run("multiple columns with FROM", func(t *testing.T) {
 		builder := Select(Account.Id, Account.Uuid).From(Account)
-		sql, paramsMap := builder.SqlWithParams(ParamsMap{})
+		sql, paramsMap := builder.SQL()
 
 		expected := "SELECT account.id, account.uuid FROM account"
 		require.Equal(t, expected, sql)
@@ -124,7 +124,7 @@ func TestBuilderWithSelect_SqlWithParams(t *testing.T) {
 
 	t.Run("with functions and parameters", func(t *testing.T) {
 		builder := Select(Count().As("cnt")).From(Account)
-		sql, _ := builder.SqlWithParams(ParamsMap{})
+		sql, _ := builder.SQL()
 
 		expected := "SELECT COUNT(1) AS cnt FROM account"
 		require.Equal(t, expected, sql)
@@ -132,7 +132,7 @@ func TestBuilderWithSelect_SqlWithParams(t *testing.T) {
 
 	t.Run("distinct flag without FROM", func(t *testing.T) {
 		builder := SelectDistinct(Account.Type)
-		sql, paramsMap := builder.SqlWithParams(ParamsMap{})
+		sql, paramsMap := builder.SQL()
 
 		expected := "SELECT DISTINCT account.type"
 		require.Equal(t, expected, sql)
@@ -141,7 +141,7 @@ func TestBuilderWithSelect_SqlWithParams(t *testing.T) {
 
 	t.Run("distinct flag with FROM", func(t *testing.T) {
 		builder := SelectDistinct(Account.Type).From(Account)
-		sql, paramsMap := builder.SqlWithParams(ParamsMap{})
+		sql, paramsMap := builder.SQL()
 
 		expected := "SELECT DISTINCT account.type FROM account"
 		require.Equal(t, expected, sql)

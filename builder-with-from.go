@@ -67,18 +67,16 @@ func (b *builderWithFrom) AsSubQuery() SQLable {
 	return newWithOptionalAlias(b, nil)
 }
 
-func (b *builderWithFrom) SqlWithParams(params ParamsMap) (string, ParamsMap) {
+func (b *builderWithFrom) SqlWithParams(params ParamsMap, ctx RenderContext) (string, ParamsMap) {
 	b.params = params.AddAll(b.params)
 	var sql string
-	sql, b.params = b.prevStage.SqlWithParams(b.params)
-
+	sql, b.params = b.prevStage.SqlWithParams(b.params, ctx)
 	var sqlTable string
-	sqlTable, b.params = b.fromTable.SqlWithParams(b.params)
-
+	sqlTable, b.params = b.fromTable.SqlWithParams(b.params, DefinitionContext)
 	return sql + " FROM " + sqlTable, b.params
 }
 
 func (b *builderWithFrom) SQL() (sql string, params []any) {
-	sql, paramsMap := b.SqlWithParams(b.params)
+	sql, paramsMap := b.SqlWithParams(b.params, OutputContext)
 	return sql, paramsMap.ToSlice()
 }

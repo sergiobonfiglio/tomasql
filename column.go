@@ -4,6 +4,22 @@ import (
 	"fmt"
 )
 
+type RenderContext string
+
+const (
+	// DefinitionContext is used when rendering definitions (e.g., SELECT clause for columns, FROM/JOIN for tables)
+	DefinitionContext RenderContext = "definition"
+
+	// ReferenceContext is used when rendering references (e.g., in WHERE, JOIN ON clauses)
+	ReferenceContext RenderContext = "reference"
+
+	// OrderByContext is used when rendering ORDER BY clauses
+	OrderByContext RenderContext = "orderBy"
+
+	// OutputContext is only used by builders that render final output (e.g., final SQL query)
+	OutputContext RenderContext = "output"
+)
+
 type Comparable interface {
 	Eq(other ParametricSql) Condition
 	Gt(other ParametricSql) Condition
@@ -58,10 +74,6 @@ type Column interface {
 	SetComparable
 }
 
-type ParametricSql interface {
-	SqlWithParams(ParamsMap) (string, ParamsMap)
-}
-
 type colTypeTag string
 
 const (
@@ -83,8 +95,7 @@ type Col[T any] struct {
 	ComparableParam[T]
 }
 
-func (c Col[T]) SqlWithParams(params ParamsMap) (string, ParamsMap) {
-
+func (c Col[T]) SqlWithParams(params ParamsMap, ctx RenderContext) (string, ParamsMap) {
 	if c.Table() == nil {
 		// this is the case for "*"
 		return c.Name(), params
@@ -92,12 +103,29 @@ func (c Col[T]) SqlWithParams(params ParamsMap) (string, ParamsMap) {
 
 	table := c.getTableForRef()
 	var tRef string
-	tRef, params = table.SqlWithParams(params)
+	tRef, params = table.SqlWithParams(params, DefinitionContext)
 
-	if c.Alias() == nil {
-		return tRef + "." + c.Name(), params
+	columnRef := tRef + "." + c.Name()
+
+	switch ctx {
+	case DefinitionContext:
+		// Only include alias in SELECT context
+		if c.Alias() != nil {
+			return columnRef + " AS " + *c.Alias(), params
+		}
+		return columnRef, params
+	case ReferenceContext:
+		// Always use table.column reference, never the alias
+		return columnRef, params
+	case OrderByContext:
+		// Use alias if set, otherwise use table.column reference
+		if c.Alias() != nil {
+			return *c.Alias(), params
+		}
+		return columnRef, params
+	default:
+		panic(fmt.Sprintf("Col.SqlWithParams: unexpected RenderContext %s", ctx))
 	}
-	return tRef + "." + c.Name() + " AS " + *c.Alias(), params
 }
 
 func (c Col[T]) getTableForRef() tableRefWrapper {
@@ -137,18 +165,6 @@ func (c Col[T]) Desc() SortColumn {
 		col:       c,
 		direction: OrderByDesc,
 	}
-}
-
-// colRefWrapper renders a column reference (just the name or alias (plus table name or alias), no "AS")
-type colRefWrapper struct {
-	col Column
-}
-
-func (crw colRefWrapper) SqlWithParams(params ParamsMap) (string, ParamsMap) {
-	if crw.col.Alias() != nil {
-		return *crw.col.Alias(), params
-	}
-	return crw.col.Name(), params
 }
 
 func NewCol[T any](name string, table Table) *Col[T] {
@@ -219,22 +235,27 @@ func (s *SortCol[T]) Column() Column {
 	return s.col
 }
 
-func (s *SortCol[T]) SqlWithParams(params ParamsMap) (string, ParamsMap) {
+func (s *SortCol[T]) SqlWithParams(params ParamsMap, ctx RenderContext) (string, ParamsMap) {
+	if ctx != OrderByContext {
+		panic(fmt.Sprintf("SortCol.SqlWithParams should only be used with OrderByContext, got %s", ctx))
+	}
 
 	if s.subQuery != nil {
-		subQueryStr, pm := s.subQuery.SqlWithParams(params)
+		subQueryStr, pm := s.subQuery.SqlWithParams(params, ctx)
 		return fmt.Sprintf("%s %s", subQueryStr, string(s.direction)), pm
 	}
 
-	sortRef := ""
-	if s.col.Table() != nil {
+	var colRef string
+	if s.col.Alias() != nil {
+		colRef = *s.col.Alias()
+	} else if s.col.Table() != nil {
 		table := tableRefWrapper{table: s.col.Table()}
-		sortRef, params = table.SqlWithParams(params)
-		sortRef += "."
+		tableStr, pm := table.SqlWithParams(params, ReferenceContext)
+		params = pm
+		colRef = tableStr + "." + s.col.Name()
+	} else {
+		colRef = s.col.Name()
 	}
 
-	var colRef string
-	colRef, params = colRefWrapper{col: s.col}.SqlWithParams(params)
-
-	return sortRef + colRef + " " + string(s.direction), params
+	return colRef + " " + string(s.direction), params
 }

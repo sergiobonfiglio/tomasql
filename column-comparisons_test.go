@@ -20,7 +20,7 @@ func (s *simpleTable) Alias() *string {
 	return s.alias
 }
 
-func (s *simpleTable) SqlWithParams(params ParamsMap) (string, ParamsMap) {
+func (s *simpleTable) SqlWithParams(params ParamsMap, _ RenderContext) (string, ParamsMap) {
 	if s.alias != nil {
 		return s.name + " AS " + *s.alias, params
 	}

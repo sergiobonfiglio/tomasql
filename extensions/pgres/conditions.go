@@ -38,7 +38,7 @@ func (i *InArrayCondition[T]) SQL(params ParamsMap) string {
 	}
 	allParams := strings.Join(paramsStr, ", ")
 
-	colSql, _ := i.col.SqlWithParams(params)
+	colSql, _ := i.col.SqlWithParams(params, ReferenceContext)
 
 	return fmt.Sprintf("%s IN (%s)", colSql, allParams)
 }

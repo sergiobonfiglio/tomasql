@@ -31,29 +31,23 @@ func (b *builderWithSelect) From(t Table) BuilderWithTables {
 	return newBuilderWithFrom(b, t)
 }
 
-func (b *builderWithSelect) SqlWithParams(params ParamsMap) (string, ParamsMap) {
+func (b *builderWithSelect) SqlWithParams(params ParamsMap, ctx RenderContext) (string, ParamsMap) {
 	var colStr []string
-
 	b.params = params.AddAll(b.params)
-
 	for _, col := range b.selectColumns {
-		// potentially, here we could check if the column is a subquery without alias that
-		// would cause a grammar error in SQL
 		var sql string
-		sql, b.params = col.SqlWithParams(b.params)
-
+		sql, b.params = col.SqlWithParams(b.params, DefinitionContext)
 		colStr = append(colStr, sql)
 	}
 	distinctStr := ""
 	if b.distinct {
 		distinctStr = "DISTINCT "
 	}
-
 	return "SELECT " + distinctStr + strings.Join(colStr, ", "), b.params
 }
 
 func (b *builderWithSelect) SQL() (sql string, params []any) {
-	sql, paramsMap := b.SqlWithParams(b.params)
+	sql, paramsMap := b.SqlWithParams(b.params, OutputContext)
 	return sql, paramsMap.ToSlice()
 }
 
@@ -73,7 +67,7 @@ func (b *builderWithSelectAll) From(t Table) BuilderWithTables {
 	return newBuilderWithFrom(b, t)
 }
 
-func (b *builderWithSelectAll) SqlWithParams(params ParamsMap) (string, ParamsMap) {
+func (b *builderWithSelectAll) SqlWithParams(params ParamsMap, ctx RenderContext) (string, ParamsMap) {
 	distinctStr := ""
 	if b.distinct {
 		distinctStr = "DISTINCT "
@@ -82,7 +76,7 @@ func (b *builderWithSelectAll) SqlWithParams(params ParamsMap) (string, ParamsMa
 }
 
 func (b *builderWithSelectAll) SQL() (sql string, params []any) {
-	sql, paramsMap := b.SqlWithParams(b.params)
+	sql, paramsMap := b.SqlWithParams(b.params, OutputContext)
 	return sql, paramsMap.ToSlice()
 }
 
@@ -115,10 +109,11 @@ func (b *withOptionalAlias) As(alias *string) SQLable {
 	return b
 }
 
-func (b *withOptionalAlias) SqlWithParams(params ParamsMap) (string, ParamsMap) {
-	sql, params := b.SQLable.SqlWithParams(params)
+func (b *withOptionalAlias) SqlWithParams(params ParamsMap, ctx RenderContext) (string, ParamsMap) {
+	sql, params := b.SQLable.SqlWithParams(params, ctx)
 	if b.alias == nil {
 		return "(" + sql + ")", params
 	}
+	// Subquery aliases should always be rendered (they're table aliases, not column aliases)
 	return "(" + sql + ") AS " + *b.alias, params
 }

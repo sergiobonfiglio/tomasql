@@ -82,8 +82,9 @@ func NewBinaryCondition(left, right ParametricSql, comparer comparerType) *Binar
 func (b *BinaryCondition) SQL(p ParamsMap) string {
 	var leftSql, rightSql string
 	params := p
-	leftSql, params = b.left.SqlWithParams(params)
-	rightSql, _ = b.right.SqlWithParams(params)
+	// Use WhereContext when rendering columns in conditions
+	leftSql, params = b.left.SqlWithParams(params, ReferenceContext)
+	rightSql, _ = b.right.SqlWithParams(params, ReferenceContext)
 	return fmt.Sprintf("%s %s %s", leftSql, b.comparer, rightSql)
 }
 
@@ -121,7 +122,7 @@ func (b *BinaryParamCondition[T]) SQL(params ParamsMap) string {
 		params[b.param] = len(params) + 1
 	}
 
-	colSql, _ := b.col.SqlWithParams(params)
+	colSql, _ := b.col.SqlWithParams(params, ReferenceContext)
 	placeholder := GetDialect().Placeholder(params[b.param])
 	return fmt.Sprintf("%s %s %s", colSql, b.comparer, placeholder)
 }
@@ -157,8 +158,8 @@ func newInCondition(col, sqlable ParametricSql) *InCondition {
 }
 
 func (i *InCondition) SQL(params ParamsMap) string {
-	subquerySql, _ := i.sqlable.SqlWithParams(params)
-	colSql, _ := i.col.SqlWithParams(params)
+	subquerySql, _ := i.sqlable.SqlWithParams(params, ReferenceContext)
+	colSql, _ := i.col.SqlWithParams(params, ReferenceContext)
 	sql := fmt.Sprintf("%s IN %s", colSql, subquerySql)
 	return sql
 }
@@ -191,7 +192,7 @@ func newIsCondition(col ParametricSql, comparer comparerType) *IsCondition {
 }
 
 func (i IsCondition) SQL(params ParamsMap) string {
-	colSql, _ := i.col.SqlWithParams(params)
+	colSql, _ := i.col.SqlWithParams(params, ReferenceContext)
 	return fmt.Sprintf("%s IS %s", colSql, i.comparer)
 }
 
@@ -222,7 +223,7 @@ func NewExistsCondition(inner ParametricSql) *ExistsCondition {
 }
 
 func (e *ExistsCondition) SQL(paramsMap ParamsMap) string {
-	innerSql, _ := e.inner.SqlWithParams(paramsMap)
+	innerSql, _ := e.inner.SqlWithParams(paramsMap, ReferenceContext)
 	return fmt.Sprintf("EXISTS(%s)", innerSql)
 }
 

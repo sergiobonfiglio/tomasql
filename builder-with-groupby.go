@@ -31,27 +31,24 @@ func (b *builderWithGroupBy) OrderBy(first SortColumn, columns ...SortColumn) Bu
 }
 
 func (b *builderWithGroupBy) SQL() (sql string, params []any) {
-	sql, paramsMap := b.SqlWithParams(b.params)
+	sql, paramsMap := b.SqlWithParams(b.params, OutputContext)
 	return sql, paramsMap.ToSlice()
 }
 
-func (b *builderWithGroupBy) SqlWithParams(paramsMap ParamsMap) (string, ParamsMap) {
+func (b *builderWithGroupBy) SqlWithParams(paramsMap ParamsMap, ctx RenderContext) (string, ParamsMap) {
 	b.params = paramsMap.AddAll(b.params)
-
 	var sql string
-	sql, b.params = b.prevStage.SqlWithParams(b.params)
+	sql, b.params = b.prevStage.SqlWithParams(b.params, ctx)
 	var groupBySql []string
 	for _, col := range b.groupBy {
 		var colSql string
-		colSql, b.params = col.SqlWithParams(b.params)
+		colSql, b.params = col.SqlWithParams(b.params, ReferenceContext)
 		groupBySql = append(groupBySql, colSql)
 	}
-
 	havingSql := ""
 	if b.having != nil {
 		havingSql = " HAVING " + b.having.SQL(b.params)
 	}
-
 	return sql + " GROUP BY " + strings.Join(groupBySql, ", ") + havingSql, b.params
 }
 

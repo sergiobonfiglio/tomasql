@@ -23,7 +23,7 @@ func newSQLableArray(array any) tomasql.ParametricSql {
 	return &sqlableArray{array: pq.Array(array), params: tomasql.ParamsMap{}}
 }
 
-func (s *sqlableArray) SqlWithParams(params tomasql.ParamsMap) (string, tomasql.ParamsMap) {
+func (s *sqlableArray) SqlWithParams(params tomasql.ParamsMap, _ tomasql.RenderContext) (string, tomasql.ParamsMap) {
 	s.params = params.AddAll(s.params)
 
 	// Use a pointer to the slice as a key to ensure it's hashable. Note: we'll have to pass the array

@@ -54,6 +54,11 @@ type SQLable interface {
 	SQL() (sql string, params []any)
 }
 
+type ParametricSql interface {
+	// SqlWithParams renders SQL with awareness of the context (SELECT, WHERE, etc.)
+	SqlWithParams(ParamsMap, RenderContext) (string, ParamsMap)
+}
+
 type SubQueryable interface {
 	SQLable
 	AsNamedSubQuery(string) Table

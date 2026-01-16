@@ -54,8 +54,8 @@ func newAllCondition(col ParametricSql, comparer comparerType, sqlable Parametri
 
 func (a *anyAllCondition) SQL(params ParamsMap) string {
 	a.params = params.AddAll(a.params)
-	sqlWithParams, _ := a.sqlable.SqlWithParams(a.params)
-	colSql, _ := a.col.SqlWithParams(a.params)
+	sqlWithParams, _ := a.sqlable.SqlWithParams(a.params, ReferenceContext)
+	colSql, _ := a.col.SqlWithParams(a.params, ReferenceContext)
 
 	return fmt.Sprintf("%s %s %s%s", colSql, a.comparer, a.operator, sqlWithParams)
 }

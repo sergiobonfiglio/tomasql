@@ -1,6 +1,9 @@
 package tomasql
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 func Count(col ...ParametricSql) *FuncCol[int] {
 	if len(col) > 1 {
@@ -72,14 +75,35 @@ type MultiParametricSql struct {
 	sqlables  []ParametricSql
 }
 
-func (m *MultiParametricSql) SqlWithParams(paramsMap ParamsMap) (string, ParamsMap) {
-	var sqls []string
-	for _, pSql := range m.sqlables {
-		sql, pm := pSql.SqlWithParams(paramsMap)
-		sqls = append(sqls, sql)
-		paramsMap = pm
+func (m *MultiParametricSql) SqlWithParams(paramsMap ParamsMap, ctx RenderContext) (string, ParamsMap) {
+	switch ctx {
+	case DefinitionContext:
+		var sqls []string
+		for _, pSql := range m.sqlables {
+			sql, pm := pSql.SqlWithParams(paramsMap, ctx)
+			sqls = append(sqls, sql)
+			paramsMap = pm
+		}
+		return strings.Join(sqls, m.separator), paramsMap
+	case ReferenceContext:
+		var sqls []string
+		for _, pSql := range m.sqlables {
+			sql, pm := pSql.SqlWithParams(paramsMap, ctx)
+			sqls = append(sqls, sql)
+			paramsMap = pm
+		}
+		return strings.Join(sqls, m.separator), paramsMap
+	case OrderByContext:
+		var sqls []string
+		for _, pSql := range m.sqlables {
+			sql, pm := pSql.SqlWithParams(paramsMap, ctx)
+			sqls = append(sqls, sql)
+			paramsMap = pm
+		}
+		return strings.Join(sqls, m.separator), paramsMap
+	default:
+		panic(fmt.Sprintf("MultiParametricSql.SqlWithParams: unexpected RenderContext %s", ctx))
 	}
-	return strings.Join(sqls, m.separator), paramsMap
 }
 
 var _ ParametricSql = &MultiParametricSql{}
@@ -244,15 +268,38 @@ func newFuncCol[T any](funcName string, inner ParametricSql) *FuncCol[T] {
 	}
 }
 
-func (f *FuncCol[T]) SqlWithParams(paramsMap ParamsMap) (string, ParamsMap) {
-	sql := f.funcName + "("
-	var innerSql string
-	innerSql, paramsMap = f.inner.SqlWithParams(paramsMap)
-	sql += innerSql + ")"
-	if f.Alias() != nil {
-		sql += " AS " + *f.Alias()
+func (f *FuncCol[T]) SqlWithParams(paramsMap ParamsMap, ctx RenderContext) (string, ParamsMap) {
+	switch ctx {
+	case DefinitionContext:
+		sql := f.funcName + "("
+		var innerSql string
+		innerSql, paramsMap = f.inner.SqlWithParams(paramsMap, ctx)
+		sql += innerSql + ")"
+		// Only include alias in SELECT context
+		if f.Alias() != nil {
+			sql += " AS " + *f.Alias()
+		}
+		return sql, paramsMap
+	case ReferenceContext:
+		sql := f.funcName + "("
+		var innerSql string
+		innerSql, paramsMap = f.inner.SqlWithParams(paramsMap, ctx)
+		sql += innerSql + ")"
+		return sql, paramsMap
+	case OrderByContext:
+		// In ORDER BY context, if there's an alias, return just the alias
+		if f.Alias() != nil {
+			return *f.Alias(), paramsMap
+		}
+		// Otherwise return the full function expression
+		sql := f.funcName + "("
+		var innerSql string
+		innerSql, paramsMap = f.inner.SqlWithParams(paramsMap, ctx)
+		sql += innerSql + ")"
+		return sql, paramsMap
+	default:
+		panic(fmt.Sprintf("FuncCol.SqlWithParams: unexpected RenderContext %s", ctx))
 	}
-	return sql, paramsMap
 }
 
 // funcColRefWrapper renders a function column reference (just the alias if present, or the full function expression)
@@ -260,14 +307,39 @@ type funcColRefWrapper[T any] struct {
 	funcCol *FuncCol[T]
 }
 
-func (fcrw funcColRefWrapper[T]) SqlWithParams(paramsMap ParamsMap) (string, ParamsMap) {
-	if fcrw.funcCol.Alias() != nil {
-		return *fcrw.funcCol.Alias(), paramsMap
+func (fcrw funcColRefWrapper[T]) SqlWithParams(paramsMap ParamsMap, ctx RenderContext) (string, ParamsMap) {
+	switch ctx {
+	case DefinitionContext:
+		if fcrw.funcCol.Alias() != nil {
+			return *fcrw.funcCol.Alias(), paramsMap
+		}
+		// If no alias, render the full function expression without " AS ..."
+		sql := fcrw.funcCol.funcName + "("
+		var innerSql string
+		innerSql, paramsMap = fcrw.funcCol.inner.SqlWithParams(paramsMap, OrderByContext)
+		sql += innerSql + ")"
+		return sql, paramsMap
+	case ReferenceContext:
+		if fcrw.funcCol.Alias() != nil {
+			return *fcrw.funcCol.Alias(), paramsMap
+		}
+		// If no alias, render the full function expression without " AS ..."
+		sql := fcrw.funcCol.funcName + "("
+		var innerSql string
+		innerSql, paramsMap = fcrw.funcCol.inner.SqlWithParams(paramsMap, OrderByContext)
+		sql += innerSql + ")"
+		return sql, paramsMap
+	case OrderByContext:
+		if fcrw.funcCol.Alias() != nil {
+			return *fcrw.funcCol.Alias(), paramsMap
+		}
+		// If no alias, render the full function expression without " AS ..."
+		sql := fcrw.funcCol.funcName + "("
+		var innerSql string
+		innerSql, paramsMap = fcrw.funcCol.inner.SqlWithParams(paramsMap, OrderByContext)
+		sql += innerSql + ")"
+		return sql, paramsMap
+	default:
+		panic(fmt.Sprintf("funcColRefWrapper.SqlWithParams: unexpected RenderContext %s", ctx))
 	}
-	// If no alias, render the full function expression without " AS ..."
-	sql := fcrw.funcCol.funcName + "("
-	var innerSql string
-	innerSql, paramsMap = fcrw.funcCol.inner.SqlWithParams(paramsMap)
-	sql += innerSql + ")"
-	return sql, paramsMap
 }

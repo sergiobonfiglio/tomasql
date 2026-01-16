@@ -248,7 +248,7 @@ func TestBuilderWithJoin_SqlWithParams(t *testing.T) {
 		sql, paramsMap := Select(Account.Id).From(Account).
 			Join(ShoppingCart).On(Account.Id.Eq(ShoppingCart.OwnerId)).
 			Where(Account.Id.EqParam(1)).
-			SqlWithParams(ParamsMap{})
+			SQL()
 
 		expected := "SELECT account.id FROM account JOIN shopping_cart ON account.id = shopping_cart.owner_id WHERE account.id = ?"
 		require.Equal(t, expected, sql)
@@ -259,7 +259,7 @@ func TestBuilderWithJoin_SqlWithParams(t *testing.T) {
 		sql, paramsMap := Select(Account.Id).From(Account).
 			Join(ShoppingCart).On(Account.Id.Eq(ShoppingCart.OwnerId)).
 			Where(Account.Id.EqParam(1).And(ShoppingCart.Id.EqParam(2))).
-			SqlWithParams(ParamsMap{})
+			SQL()
 
 		expected := "SELECT account.id FROM account JOIN shopping_cart ON account.id = shopping_cart.owner_id WHERE account.id = ? AND shopping_cart.id = ?"
 		require.Equal(t, expected, sql)

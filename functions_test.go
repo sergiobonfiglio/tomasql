@@ -14,119 +14,126 @@ func TestFuncColumn(t *testing.T) {
 		{
 			want: "COUNT(1)",
 			got: func() string {
-				sql, _ := Count().SqlWithParams(ParamsMap{})
+				sql, _ := Count().SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
 		{
 			want: "COUNT(1) AS c1",
 			got: func() string {
-				sql, _ := Count().As("c1").SqlWithParams(ParamsMap{})
+				sql, _ := Count().As("c1").SqlWithParams(ParamsMap{}, DefinitionContext)
+				return sql
+			},
+		},
+		{
+			want: "c1",
+			got: func() string {
+				sql, _ := Count().As("c1").SqlWithParams(ParamsMap{}, OrderByContext)
 				return sql
 			},
 		},
 		{
 			want: "COUNT(col1)",
 			got: func() string {
-				sql, _ := Count(NewCol[int]("col1", nil)).SqlWithParams(ParamsMap{})
+				sql, _ := Count(NewCol[int]("col1", nil)).SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
 		{
 			want: "COUNT(col1) AS c2",
 			got: func() string {
-				sql, _ := Count(NewCol[int]("col1", nil)).As("c2").SqlWithParams(ParamsMap{})
+				sql, _ := Count(NewCol[int]("col1", nil)).As("c2").SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
 		{
 			want: "COUNT(DISTINCT col1)",
 			got: func() string {
-				sql, _ := CountDistinct(NewCol[int]("col1", nil)).SqlWithParams(ParamsMap{})
+				sql, _ := CountDistinct(NewCol[int]("col1", nil)).SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
 		{
 			want: "COUNT(DISTINCT col1) AS cd1",
 			got: func() string {
-				sql, _ := CountDistinct(NewCol[int]("col1", nil)).As("cd1").SqlWithParams(ParamsMap{})
+				sql, _ := CountDistinct(NewCol[int]("col1", nil)).As("cd1").SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
 		{
 			want: "COUNT(DISTINCT col1, col2)",
 			got: func() string {
-				sql, _ := CountDistinct(NewCol[int]("col1", nil), NewCol[int]("col2", nil)).SqlWithParams(ParamsMap{})
+				sql, _ := CountDistinct(NewCol[int]("col1", nil), NewCol[int]("col2", nil)).SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
 		{
 			want: "COUNT(DISTINCT col1, col2, col3) AS cd2",
 			got: func() string {
-				sql, _ := CountDistinct(NewCol[int]("col1", nil), NewCol[int]("col2", nil), NewCol[int]("col3", nil)).As("cd2").SqlWithParams(ParamsMap{})
+				sql, _ := CountDistinct(NewCol[int]("col1", nil), NewCol[int]("col2", nil), NewCol[int]("col3", nil)).As("cd2").SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
 		{
 			want: "EXISTS(SELECT 1)",
 			got: func() string {
-				sql, _ := Exists(Select(NewFixedCol(1, nil))).SqlWithParams(ParamsMap{})
+				sql, _ := Exists(Select(NewFixedCol(1, nil))).SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
 		{
 			want: "EXISTS(SELECT 1) AS e1",
 			got: func() string {
-				sql, _ := Exists(Select(NewFixedCol(1, nil))).As("e1").SqlWithParams(ParamsMap{})
+				sql, _ := Exists(Select(NewFixedCol(1, nil))).As("e1").SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
 		{
 			want: "SUM(col1)",
 			got: func() string {
-				sql, _ := Sum[int](NewCol[int]("col1", nil)).SqlWithParams(ParamsMap{})
+				sql, _ := Sum[int](NewCol[int]("col1", nil)).SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
 		{
 			want: "AVG(col2)",
 			got: func() string {
-				sql, _ := Avg[float64](NewCol[float64]("col2", nil)).SqlWithParams(ParamsMap{})
+				sql, _ := Avg[float64](NewCol[float64]("col2", nil)).SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
 		{
 			want: "MIN(col3)",
 			got: func() string {
-				sql, _ := Min[int](NewCol[int]("col3", nil)).SqlWithParams(ParamsMap{})
+				sql, _ := Min[int](NewCol[int]("col3", nil)).SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
 		{
 			want: "MAX(col4)",
 			got: func() string {
-				sql, _ := Max[int](NewCol[int]("col4", nil)).SqlWithParams(ParamsMap{})
+				sql, _ := Max[int](NewCol[int]("col4", nil)).SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
 		{
 			want: "UPPER(col5)",
 			got: func() string {
-				sql, _ := Upper(NewCol[string]("col5", nil)).SqlWithParams(ParamsMap{})
+				sql, _ := Upper(NewCol[string]("col5", nil)).SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
 		{
 			want: "LOWER(col6)",
 			got: func() string {
-				sql, _ := Lower(NewCol[string]("col6", nil)).SqlWithParams(ParamsMap{})
+				sql, _ := Lower(NewCol[string]("col6", nil)).SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
 		{
 			want: "LENGTH(col7)",
 			got: func() string {
-				sql, _ := Length(NewCol[string]("col7", nil)).SqlWithParams(ParamsMap{})
+				sql, _ := Length(NewCol[string]("col7", nil)).SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
@@ -137,28 +144,28 @@ func TestFuncColumn(t *testing.T) {
 					NewCol[string]("col8", nil),
 					NewCol[string]("col9", nil),
 					NewCol[string]("col10", nil),
-				).SqlWithParams(ParamsMap{})
+				).SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
 		{
 			want: "ROUND(col11, 2)",
 			got: func() string {
-				sql, _ := Round(NewCol[float64]("col11", nil), 2).SqlWithParams(ParamsMap{})
+				sql, _ := Round(NewCol[float64]("col11", nil), 2).SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
 		{
 			want: "ABS(col12)",
 			got: func() string {
-				sql, _ := Abs[int](NewCol[int]("col12", nil)).SqlWithParams(ParamsMap{})
+				sql, _ := Abs[int](NewCol[int]("col12", nil)).SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
 		{
 			want: "TRIM(col13)",
 			got: func() string {
-				sql, _ := Trim(NewCol[string]("col13", nil)).SqlWithParams(ParamsMap{})
+				sql, _ := Trim(NewCol[string]("col13", nil)).SqlWithParams(ParamsMap{}, DefinitionContext)
 				return sql
 			},
 		},
@@ -297,7 +304,7 @@ func TestFuncCol_Alias(t *testing.T) {
 
 	t.Run("Alias in SQL", func(t *testing.T) {
 		countFunc := Count(NewCol[int]("col1", nil)).As("cnt")
-		sql, _ := countFunc.SqlWithParams(ParamsMap{})
+		sql, _ := countFunc.SqlWithParams(ParamsMap{}, DefinitionContext)
 		require.Equal(t, "COUNT(col1) AS cnt", sql)
 	})
 }
@@ -308,7 +315,7 @@ func TestFuncCol_Sorting(t *testing.T) {
 		countFunc := Count(NewCol[int]("col1", nil)).As("cnt")
 		sortCol := countFunc.Asc()
 
-		sql, _ := sortCol.SqlWithParams(ParamsMap{})
+		sql, _ := sortCol.SqlWithParams(ParamsMap{}, OrderByContext)
 		require.Equal(t, "cnt ASC", sql)
 	})
 
@@ -316,7 +323,7 @@ func TestFuncCol_Sorting(t *testing.T) {
 		countFunc := Count(NewCol[int]("col1", nil)).As("cnt")
 		sortCol := countFunc.Desc()
 
-		sql, _ := sortCol.SqlWithParams(ParamsMap{})
+		sql, _ := sortCol.SqlWithParams(ParamsMap{}, OrderByContext)
 		require.Equal(t, "cnt DESC", sql)
 	})
 
@@ -324,7 +331,7 @@ func TestFuncCol_Sorting(t *testing.T) {
 		countFunc := Count(NewCol[int]("col1", nil))
 		sortCol := countFunc.Asc()
 
-		sql, _ := sortCol.SqlWithParams(ParamsMap{})
+		sql, _ := sortCol.SqlWithParams(ParamsMap{}, OrderByContext)
 		require.Equal(t, "COUNT(col1) ASC", sql)
 	})
 }
