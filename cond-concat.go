@@ -55,7 +55,7 @@ type GroupedCondition struct {
 var _ Condition = &GroupedCondition{} // Ensure GroupedCondition implements Condition
 
 func Grouped(conditions ...Condition) *GroupedCondition {
-	return &GroupedCondition{ConcatCondition{conditions: conditions}}
+	return &GroupedCondition{ConcatCondition{conditions: conditions, connector: AndCondConnector}}
 }
 
 func (g *GroupedCondition) SQL(p ParamsMap) string {

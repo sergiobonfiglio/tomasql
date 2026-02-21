@@ -2,23 +2,54 @@ package tomasql
 
 import (
 	"fmt"
+	"reflect"
 )
 
 type ParamsMap map[any]int
+
+type paramBox struct {
+	value any
+}
+
+func toParamKey(value any) any {
+	if value == nil {
+		return nil
+	}
+	if reflect.TypeOf(value).Comparable() {
+		return value
+	}
+	return &paramBox{value: value}
+}
+
+func fromParamKey(key any) any {
+	if boxed, ok := key.(*paramBox); ok {
+		return boxed.value
+	}
+	return key
+}
+
+func addParam(params ParamsMap, value any) int {
+	key := toParamKey(value)
+	if _, ok := params[key]; !ok {
+		params[key] = len(params) + 1
+	}
+	return params[key]
+}
 
 // ToSlice returns a slice of parameters' values respecting their order as placeholders
 func (p ParamsMap) ToSlice() []any {
 	out := make([]any, len(p))
 	for pVal, pOrder := range p {
-		out[pOrder-1] = pVal
+		out[pOrder-1] = fromParamKey(pVal)
 	}
 	return out
 }
 
 func (p ParamsMap) AddAll(toAdd ParamsMap) ParamsMap {
 	for val := range toAdd {
-		if _, ok := p[val]; !ok {
-			p[val] = len(p) + 1
+		normalized := toParamKey(fromParamKey(val))
+		if _, ok := p[normalized]; !ok {
+			p[normalized] = len(p) + 1
 		}
 	}
 
@@ -117,13 +148,9 @@ func NewBinaryParamCondition[T any](col ParametricSql, param T, comparer compare
 }
 
 func (b *BinaryParamCondition[T]) SQL(params ParamsMap) string {
-	// If the parameter is not already in the map, add it
-	if _, ok := params[b.param]; !ok {
-		params[b.param] = len(params) + 1
-	}
-
+	order := addParam(params, b.param)
 	colSql, _ := b.col.SqlWithParams(params, ReferenceContext)
-	placeholder := GetDialect().Placeholder(params[b.param])
+	placeholder := GetDialect().Placeholder(order)
 	return fmt.Sprintf("%s %s %s", colSql, b.comparer, placeholder)
 }
 

@@ -86,3 +86,26 @@ func TestCondition_Columns(t *testing.T) {
 		})
 	}
 }
+
+func TestGrouped_MultipleConditions_DefaultsToAnd(t *testing.T) {
+	sql := Grouped(
+		Account.Id.EqParam(1),
+		Account.Uuid.EqParam("u1"),
+	).SQL(ParamsMap{})
+
+	require.Equal(t,
+		"(account.id = "+GetDialect().Placeholder(1)+" AND account.uuid = "+GetDialect().Placeholder(2)+")",
+		sql,
+	)
+}
+
+func TestBinaryParamCondition_NonComparableParam_NoPanic(t *testing.T) {
+	params := ParamsMap{}
+	require.NotPanics(t, func() {
+		_ = NewBinaryParamCondition[[]byte](Account.Uuid, []byte("abc"), comparerEq).SQL(params)
+	})
+
+	slice := params.ToSlice()
+	require.Len(t, slice, 1)
+	require.Equal(t, []byte("abc"), slice[0])
+}

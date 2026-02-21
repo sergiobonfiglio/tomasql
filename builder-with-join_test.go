@@ -347,3 +347,12 @@ func TestBuilderWithJoin_Joins(t *testing.T) {
 		require.Equal(t, expected, sql)
 	})
 }
+
+func TestBuilderWithJoin_On_WithNoJoin_NoPanic(t *testing.T) {
+	base := Select(Account.Id).From(Account)
+	joinBuilder := newBuilderWithJoin(base.(ParametricSql), InnerJoin, nil)
+
+	require.NotPanics(t, func() {
+		_ = joinBuilder.On(Account.Id.EqParam(1))
+	})
+}

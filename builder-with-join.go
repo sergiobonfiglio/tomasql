@@ -36,6 +36,9 @@ func (b *builderWithJoin) AsSubQuery() SQLable {
 }
 
 func (b *builderWithJoin) On(condition Condition) BuilderWithTables {
+	if len(b.joins) == 0 {
+		return b
+	}
 	lastJoin := b.joins[len(b.joins)-1]
 	lastJoin.joinCondition = condition
 	return b
