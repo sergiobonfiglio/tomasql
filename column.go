@@ -118,10 +118,7 @@ func (c Col[T]) SqlWithParams(params ParamsMap, ctx RenderContext) (string, Para
 		// Always use table.column reference, never the alias
 		return columnRef, params
 	case OrderByContext:
-		// Use alias if set, otherwise use table.column reference
-		if c.Alias() != nil {
-			return *c.Alias(), params
-		}
+		// Always use table.column reference, never the alias
 		return columnRef, params
 	default:
 		panic(fmt.Sprintf("Col.SqlWithParams: unexpected RenderContext %s", ctx))
@@ -245,17 +242,6 @@ func (s *SortCol[T]) SqlWithParams(params ParamsMap, ctx RenderContext) (string,
 		return fmt.Sprintf("%s %s", subQueryStr, string(s.direction)), pm
 	}
 
-	var colRef string
-	if s.col.Alias() != nil {
-		colRef = *s.col.Alias()
-	} else if s.col.Table() != nil {
-		table := tableRefWrapper{table: s.col.Table()}
-		tableStr, pm := table.SqlWithParams(params, ReferenceContext)
-		params = pm
-		colRef = tableStr + "." + s.col.Name()
-	} else {
-		colRef = s.col.Name()
-	}
-
+	colRef, params := s.col.SqlWithParams(params, ReferenceContext)
 	return colRef + " " + string(s.direction), params
 }
