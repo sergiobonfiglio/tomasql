@@ -212,7 +212,7 @@ func TestBuilder(t *testing.T) {
 			name: "order by",
 			tests: []test{
 				{
-					want: "SELECT account.id AS accId, account.uuid FROM account WHERE account.id = account.id ORDER BY accId ASC, account.uuid DESC",
+					want: "SELECT account.id AS accId, account.uuid FROM account WHERE account.id = account.id ORDER BY account.id ASC, account.uuid DESC",
 					got: func() string {
 
 						idCol := Account.Id.As("accId")
@@ -225,7 +225,7 @@ func TestBuilder(t *testing.T) {
 					}(),
 				},
 				{
-					want: "SELECT account.id AS accId, account.uuid FROM account WHERE account.id = " + GetDialect().Placeholder(1) + " ORDER BY accId ASC, account.uuid DESC",
+					want: "SELECT account.id AS accId, account.uuid FROM account WHERE account.id = " + GetDialect().Placeholder(1) + " ORDER BY account.id ASC, account.uuid DESC",
 					got: func() string {
 
 						idCol := Account.Id.As("accId")
@@ -267,6 +267,18 @@ func TestBuilder(t *testing.T) {
 							From(Account).
 							GroupBy(Account.Id).
 							OrderBy(Count().Asc()).
+							SQL()
+						return sql
+					}(),
+				},
+				{
+					want: "SELECT account.id AS accId FROM account ORDER BY account.uuid ASC",
+					got: func() string {
+						idCol := Account.Id.As("accId")
+						uuidSortCol := Account.Uuid.As("accUuid")
+						sql, _ := Select(idCol).
+							From(Account).
+							OrderBy(uuidSortCol.Asc()).
 							SQL()
 						return sql
 					}(),

@@ -40,7 +40,7 @@ func TestColSqlWithParams_RenderContexts(t *testing.T) {
 		}{
 			{name: "DefinitionContext (includes AS)", ctx: DefinitionContext, expected: "users.username AS user_name"},
 			{name: "ReferenceContext (no alias)", ctx: ReferenceContext, expected: "users.username"},
-			{name: "OrderByContext (uses alias)", ctx: OrderByContext, expected: "user_name"},
+			{name: "OrderByContext (no alias)", ctx: OrderByContext, expected: "users.username"},
 		}
 
 		for _, tt := range tests {
@@ -82,7 +82,7 @@ func TestColSqlWithParams_RenderContexts(t *testing.T) {
 		}{
 			{name: "DefinitionContext (includes AS)", ctx: DefinitionContext, expected: "u.username AS user_name"},
 			{name: "ReferenceContext (no alias)", ctx: ReferenceContext, expected: "u.username"},
-			{name: "OrderByContext (uses alias)", ctx: OrderByContext, expected: "user_name"},
+			{name: "OrderByContext (no alias)", ctx: OrderByContext, expected: "u.username"},
 		}
 
 		for _, tt := range tests {
