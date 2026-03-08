@@ -10,7 +10,7 @@ TomaSQL is a type-safe SQL query builder for Go that provides a fluent API for c
 - **Type-safe**: Compile-time type checking for SQL queries
 - **Performance**: No reflection
 - **Fluent API**: Intuitive, chainable query building
-- **Rich SQL Support**: JOINs, subqueries, aggregations, and more
+- **Rich SQL Support**: SELECT queries with JOINs, subqueries, aggregations, and batch INSERT statements
 - **Database Schema Integration**: Generate type-safe table definitions from your database schema
 
 ## Quick Start
@@ -84,6 +84,23 @@ sql, params := query.SQL()
 // WHERE users.name IS NOT NULL
 // ORDER BY users.name ASC
 ```
+
+### Inserting Rows
+
+```go
+query := tomasql.InsertInto(Users).
+    Columns(Users.Name, Users.Email, Users.IsActive).
+    ValuesParam([]any{"Ada", "ada@example.com", true}).
+    ValuesParam([]any{"Grace", "grace@example.com", true})
+
+sql, params := query.SQL()
+// SQL:
+// INSERT INTO users (name, email, is_active)
+// VALUES (?, ?, ?), (?, ?, ?)
+// Params: ["Ada", "ada@example.com", true, "Grace", "grace@example.com", true]
+```
+
+`InsertInto` supports single-row and batch inserts. Each `ValuesParam` call adds one row, and the number of values must match the number of columns passed to `Columns(...)`.
 
 ### Using Functions and Aggregations
 
@@ -189,10 +206,18 @@ TomaSQL includes a code generation tool to create type-safe table definitions fr
 ### Entry Points
 
 - `Select(cols ...ParametricSql)` - Start a SELECT query
-- `SelectAll()` - Start a SELECT \* query (equivalent to `Select(<GenTable>.Star())`
+- `SelectAll()` - Start a SELECT * query (equivalent to `Select(<GenTable>.Star())`
 - `SelectDistinct(cols ...ParametricSql)` - Start a SELECT DISTINCT query
+- `InsertInto(table Table)` - Start an INSERT query
 
-Every entry point also has an alternative version which takes `Column` as parameters instead of `ParametricSql` to avoid manual casting if you have an array of columns you want to select.
+Every SELECT entry point also has an alternative version which takes `Column` as parameters instead of `ParametricSql` to avoid manual casting if you have an array of columns you want to select.
+
+INSERT queries follow this flow:
+
+- `InsertInto(table)`
+- `.Columns(col1, col2, ...)`
+- `.ValuesParam([]any{...})` for one or more rows
+- `.SQL()`
 
 ### Comparisons
 
