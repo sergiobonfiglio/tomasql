@@ -18,6 +18,9 @@ const (
 
 	// OutputContext is only used by builders that render final output (e.g., final SQL query)
 	OutputContext RenderContext = "output"
+
+	// InsertContext is used when rendering INSERT statements
+	InsertContext RenderContext = "insert"
 )
 
 type Comparable interface {
@@ -120,6 +123,9 @@ func (c Col[T]) SqlWithParams(params ParamsMap, ctx RenderContext) (string, Para
 	case OrderByContext:
 		// Always use table.column reference, never the alias
 		return columnRef, params
+	case InsertContext:
+		// For INSERT, just use the column name
+		return c.Name(), params
 	default:
 		panic(fmt.Sprintf("Col.SqlWithParams: unexpected RenderContext %s", ctx))
 	}
