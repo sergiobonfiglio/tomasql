@@ -7,6 +7,7 @@ type builderWithGroupBy struct {
 	groupBy   []ParametricSql
 	having    Condition
 	params    ParamsMap
+	ctes      []*CommonTableExpression
 }
 
 var _ BuilderWithGroupBy = &builderWithGroupBy{}
@@ -17,6 +18,7 @@ func newBuilderWithGroupBy(prev ParametricSql, groupBy []ParametricSql, having C
 		groupBy:   groupBy,
 		having:    having,
 		params:    ParamsMap{},
+		ctes:      ctesFrom(prev),
 	}
 	return b
 }
@@ -35,21 +37,27 @@ func (b *builderWithGroupBy) SQL() (sql string, params []any) {
 	return sql, paramsMap.ToSlice()
 }
 
+func (b *builderWithGroupBy) getCTEs() []*CommonTableExpression {
+	return b.ctes
+}
+
 func (b *builderWithGroupBy) SqlWithParams(paramsMap ParamsMap, ctx RenderContext) (string, ParamsMap) {
-	b.params = paramsMap.AddAll(b.params)
-	var sql string
-	sql, b.params = b.prevStage.SqlWithParams(b.params, ctx)
-	var groupBySql []string
-	for _, col := range b.groupBy {
-		var colSql string
-		colSql, b.params = col.SqlWithParams(b.params, ReferenceContext)
-		groupBySql = append(groupBySql, colSql)
-	}
-	havingSql := ""
-	if b.having != nil {
-		havingSql = " HAVING " + b.having.SQL(b.params)
-	}
-	return sql + " GROUP BY " + strings.Join(groupBySql, ", ") + havingSql, b.params
+	return renderWithCTEs(paramsMap, b.ctes, ctx, func(paramsMap ParamsMap) (string, ParamsMap) {
+		b.params = paramsMap.AddAll(b.params)
+		var sql string
+		sql, b.params = b.prevStage.SqlWithParams(b.params, suppressWith(ctx))
+		var groupBySql []string
+		for _, col := range b.groupBy {
+			var colSql string
+			colSql, b.params = col.SqlWithParams(b.params, ReferenceContext)
+			groupBySql = append(groupBySql, colSql)
+		}
+		havingSql := ""
+		if b.having != nil {
+			havingSql = " HAVING " + b.having.SQL(b.params)
+		}
+		return sql + " GROUP BY " + strings.Join(groupBySql, ", ") + havingSql, b.params
+	})
 }
 
 func (b *builderWithGroupBy) AsNamedSubQuery(alias string) Table {

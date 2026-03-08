@@ -6,6 +6,7 @@ type builderWithJoin struct {
 	prevStage ParametricSql
 	joins     []*joinDef
 	params    ParamsMap
+	ctes      []*CommonTableExpression
 }
 
 var (
@@ -23,6 +24,7 @@ func newBuilderWithJoin(prev ParametricSql, joinType JoinType, joinTable Table) 
 		prevStage: prev,
 		joins:     joins,
 		params:    params,
+		ctes:      ctesFrom(prev),
 	}
 	return b
 }
@@ -76,21 +78,27 @@ func (b *builderWithJoin) OrderBy(column SortColumn, columns ...SortColumn) Buil
 	return newBuilderWithOrderBy(b, append([]SortColumn{column}, columns...))
 }
 
+func (b *builderWithJoin) getCTEs() []*CommonTableExpression {
+	return b.ctes
+}
+
 func (b *builderWithJoin) SqlWithParams(params ParamsMap, ctx RenderContext) (string, ParamsMap) {
-	b.params = params.AddAll(b.params)
-	var out string
-	out, b.params = b.prevStage.SqlWithParams(b.params, ctx)
-	if len(b.joins) > 0 {
-		var joinStr []string
-		for _, join := range b.joins {
-			var jstr string
-			jstr, b.params = join.SqlWithParams(b.params, DefinitionContext)
-			joinStr = append(joinStr, jstr)
+	return renderWithCTEs(params, b.ctes, ctx, func(params ParamsMap) (string, ParamsMap) {
+		b.params = params.AddAll(b.params)
+		var out string
+		out, b.params = b.prevStage.SqlWithParams(b.params, suppressWith(ctx))
+		if len(b.joins) > 0 {
+			var joinStr []string
+			for _, join := range b.joins {
+				var jstr string
+				jstr, b.params = join.SqlWithParams(b.params, DefinitionContext)
+				joinStr = append(joinStr, jstr)
+			}
+			join := strings.Join(joinStr, " ")
+			out += " " + join
 		}
-		join := strings.Join(joinStr, " ")
-		out += " " + join
-	}
-	return out, b.params
+		return out, b.params
+	})
 }
 
 func (b *builderWithJoin) SQL() (sql string, params []any) {

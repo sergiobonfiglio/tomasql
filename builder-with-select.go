@@ -6,15 +6,21 @@ type builderWithSelect struct {
 	selectColumns []ParametricSql
 	distinct      bool
 	params        ParamsMap
+	ctes          []*CommonTableExpression
 }
 
 var _ BuilderWithSelect = &builderWithSelect{}
 
 func newBuilderWithSelect(distinct bool, first ParametricSql, columns ...ParametricSql) BuilderWithSelect {
+	return newBuilderWithSelectWithCTEs(distinct, nil, first, columns...)
+}
+
+func newBuilderWithSelectWithCTEs(distinct bool, ctes []*CommonTableExpression, first ParametricSql, columns ...ParametricSql) BuilderWithSelect {
 	b := &builderWithSelect{
 		selectColumns: append([]ParametricSql{first}, columns...),
 		distinct:      distinct,
 		params:        ParamsMap{},
+		ctes:          ctes,
 	}
 	return b
 }
@@ -31,19 +37,25 @@ func (b *builderWithSelect) From(t Table) BuilderWithTables {
 	return newBuilderWithFrom(b, t)
 }
 
+func (b *builderWithSelect) getCTEs() []*CommonTableExpression {
+	return b.ctes
+}
+
 func (b *builderWithSelect) SqlWithParams(params ParamsMap, ctx RenderContext) (string, ParamsMap) {
-	var colStr []string
-	b.params = params.AddAll(b.params)
-	for _, col := range b.selectColumns {
-		var sql string
-		sql, b.params = col.SqlWithParams(b.params, DefinitionContext)
-		colStr = append(colStr, sql)
-	}
-	distinctStr := ""
-	if b.distinct {
-		distinctStr = "DISTINCT "
-	}
-	return "SELECT " + distinctStr + strings.Join(colStr, ", "), b.params
+	return renderWithCTEs(params, b.ctes, ctx, func(params ParamsMap) (string, ParamsMap) {
+		var colStr []string
+		b.params = params.AddAll(b.params)
+		for _, col := range b.selectColumns {
+			var sql string
+			sql, b.params = col.SqlWithParams(b.params, DefinitionContext)
+			colStr = append(colStr, sql)
+		}
+		distinctStr := ""
+		if b.distinct {
+			distinctStr = "DISTINCT "
+		}
+		return "SELECT " + distinctStr + strings.Join(colStr, ", "), b.params
+	})
 }
 
 func (b *builderWithSelect) SQL() (sql string, params []any) {
@@ -58,8 +70,12 @@ type builderWithSelectAll struct {
 var _ BuilderWithSelect = &builderWithSelectAll{}
 
 func newBuilderWithSelectAll(distinct bool) BuilderWithSelect {
+	return newBuilderWithSelectAllWithCTEs(distinct, nil)
+}
+
+func newBuilderWithSelectAllWithCTEs(distinct bool, ctes []*CommonTableExpression) BuilderWithSelect {
 	return &builderWithSelectAll{
-		builderWithSelect: &builderWithSelect{distinct: distinct},
+		builderWithSelect: &builderWithSelect{distinct: distinct, ctes: ctes},
 	}
 }
 
@@ -68,11 +84,13 @@ func (b *builderWithSelectAll) From(t Table) BuilderWithTables {
 }
 
 func (b *builderWithSelectAll) SqlWithParams(params ParamsMap, ctx RenderContext) (string, ParamsMap) {
-	distinctStr := ""
-	if b.distinct {
-		distinctStr = "DISTINCT "
-	}
-	return "SELECT " + distinctStr + "*", params
+	return renderWithCTEs(params, b.ctes, ctx, func(params ParamsMap) (string, ParamsMap) {
+		distinctStr := ""
+		if b.distinct {
+			distinctStr = "DISTINCT "
+		}
+		return "SELECT " + distinctStr + "*", params
+	})
 }
 
 func (b *builderWithSelectAll) SQL() (sql string, params []any) {

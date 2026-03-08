@@ -1,5 +1,14 @@
 package tomasql
 
+type WithBuilder interface {
+	Select(first ParametricSql, columns ...ParametricSql) BuilderWithSelect
+	SelectCols(first Column, columns ...Column) BuilderWithSelect
+	SelectDistinct(first ParametricSql, columns ...ParametricSql) BuilderWithSelect
+	SelectDistinctCols(first Column, columns ...Column) BuilderWithSelect
+	SelectAll() BuilderWithSelect
+	SelectDistinctAll() BuilderWithSelect
+}
+
 type BuilderWithSelect interface {
 	SubQueryable
 	From(Table) BuilderWithTables

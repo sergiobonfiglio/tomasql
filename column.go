@@ -18,7 +18,51 @@ const (
 
 	// OutputContext is only used by builders that render final output (e.g., final SQL query)
 	OutputContext RenderContext = "output"
+
+	definitionContextNoWith RenderContext = "definitionNoWith"
+	referenceContextNoWith  RenderContext = "referenceNoWith"
+	orderByContextNoWith    RenderContext = "orderByNoWith"
+	outputContextNoWith     RenderContext = "outputNoWith"
 )
+
+func baseRenderContext(ctx RenderContext) RenderContext {
+	switch ctx {
+	case definitionContextNoWith:
+		return DefinitionContext
+	case referenceContextNoWith:
+		return ReferenceContext
+	case orderByContextNoWith:
+		return OrderByContext
+	case outputContextNoWith:
+		return OutputContext
+	default:
+		return ctx
+	}
+}
+
+func suppressWith(ctx RenderContext) RenderContext {
+	switch baseRenderContext(ctx) {
+	case DefinitionContext:
+		return definitionContextNoWith
+	case ReferenceContext:
+		return referenceContextNoWith
+	case OrderByContext:
+		return orderByContextNoWith
+	case OutputContext:
+		return outputContextNoWith
+	default:
+		return ctx
+	}
+}
+
+func isWithSuppressed(ctx RenderContext) bool {
+	switch ctx {
+	case definitionContextNoWith, referenceContextNoWith, orderByContextNoWith, outputContextNoWith:
+		return true
+	default:
+		return false
+	}
+}
 
 type Comparable interface {
 	Eq(other ParametricSql) Condition
@@ -96,6 +140,7 @@ type Col[T any] struct {
 }
 
 func (c Col[T]) SqlWithParams(params ParamsMap, ctx RenderContext) (string, ParamsMap) {
+	ctx = baseRenderContext(ctx)
 	if c.Table() == nil {
 		// this is the case for "*"
 		return c.Name(), params
@@ -233,6 +278,7 @@ func (s *SortCol[T]) Column() Column {
 }
 
 func (s *SortCol[T]) SqlWithParams(params ParamsMap, ctx RenderContext) (string, ParamsMap) {
+	ctx = baseRenderContext(ctx)
 	if ctx != OrderByContext {
 		panic(fmt.Sprintf("SortCol.SqlWithParams should only be used with OrderByContext, got %s", ctx))
 	}

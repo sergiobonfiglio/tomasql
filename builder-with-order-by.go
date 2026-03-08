@@ -11,6 +11,7 @@ type builderWithOrderBy struct {
 	limit     *int
 	offset    *int
 	params    ParamsMap
+	ctes      []*CommonTableExpression
 }
 
 var (
@@ -23,6 +24,7 @@ func newBuilderWithOrderBy(prev ParametricSql, orderBy []SortColumn) BuilderWith
 		prevStage: prev,
 		orderBy:   orderBy,
 		params:    ParamsMap{},
+		ctes:      ctesFrom(prev),
 	}
 
 	return b
@@ -46,27 +48,33 @@ func (b *builderWithOrderBy) Offset(i int) SQLable {
 	return b
 }
 
+func (b *builderWithOrderBy) getCTEs() []*CommonTableExpression {
+	return b.ctes
+}
+
 func (b *builderWithOrderBy) SqlWithParams(params ParamsMap, ctx RenderContext) (string, ParamsMap) {
-	b.params = params.AddAll(b.params)
-	var out string
-	out, b.params = b.prevStage.SqlWithParams(b.params, ctx)
-	if len(b.orderBy) > 0 {
-		out += " ORDER BY "
-		var orderStr []string
-		for _, col := range b.orderBy {
-			var sortStr string
-			sortStr, b.params = col.SqlWithParams(b.params, OrderByContext)
-			orderStr = append(orderStr, sortStr)
+	return renderWithCTEs(params, b.ctes, ctx, func(params ParamsMap) (string, ParamsMap) {
+		b.params = params.AddAll(b.params)
+		var out string
+		out, b.params = b.prevStage.SqlWithParams(b.params, suppressWith(ctx))
+		if len(b.orderBy) > 0 {
+			out += " ORDER BY "
+			var orderStr []string
+			for _, col := range b.orderBy {
+				var sortStr string
+				sortStr, b.params = col.SqlWithParams(b.params, OrderByContext)
+				orderStr = append(orderStr, sortStr)
+			}
+			out += strings.Join(orderStr, ", ")
 		}
-		out += strings.Join(orderStr, ", ")
-	}
-	if b.limit != nil {
-		out += fmt.Sprintf(" LIMIT %d", *b.limit)
-	}
-	if b.offset != nil {
-		out += fmt.Sprintf(" OFFSET %d", *b.offset)
-	}
-	return out, b.params
+		if b.limit != nil {
+			out += fmt.Sprintf(" LIMIT %d", *b.limit)
+		}
+		if b.offset != nil {
+			out += fmt.Sprintf(" OFFSET %d", *b.offset)
+		}
+		return out, b.params
+	})
 }
 
 func (b *builderWithOrderBy) SQL() (sql string, params []any) {

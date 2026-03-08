@@ -76,7 +76,7 @@ type MultiParametricSql struct {
 }
 
 func (m *MultiParametricSql) SqlWithParams(paramsMap ParamsMap, ctx RenderContext) (string, ParamsMap) {
-	switch ctx {
+	switch baseRenderContext(ctx) {
 	case DefinitionContext:
 		var sqls []string
 		for _, pSql := range m.sqlables {
@@ -269,7 +269,7 @@ func newFuncCol[T any](funcName string, inner ParametricSql) *FuncCol[T] {
 }
 
 func (f *FuncCol[T]) SqlWithParams(paramsMap ParamsMap, ctx RenderContext) (string, ParamsMap) {
-	switch ctx {
+	switch baseRenderContext(ctx) {
 	case DefinitionContext:
 		sql := f.funcName + "("
 		var innerSql string
@@ -308,7 +308,7 @@ type funcColRefWrapper[T any] struct {
 }
 
 func (fcrw funcColRefWrapper[T]) SqlWithParams(paramsMap ParamsMap, ctx RenderContext) (string, ParamsMap) {
-	switch ctx {
+	switch baseRenderContext(ctx) {
 	case DefinitionContext:
 		if fcrw.funcCol.Alias() != nil {
 			return *fcrw.funcCol.Alias(), paramsMap

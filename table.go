@@ -30,7 +30,7 @@ func NewSqlableTable(t Table) *sqlableTable {
 }
 
 func (s *sqlableTable) SqlWithParams(params ParamsMap, ctx RenderContext) (string, ParamsMap) {
-	switch ctx {
+	switch baseRenderContext(ctx) {
 	case DefinitionContext:
 		tRef := s.table.TableName()
 		if s.table.Alias() != nil {
@@ -89,7 +89,7 @@ func (t *tableRefWrapper) Alias() *string {
 
 // SqlWithParams implements Table.
 func (t *tableRefWrapper) SqlWithParams(paramsMap ParamsMap, ctx RenderContext) (string, ParamsMap) {
-	switch ctx {
+	switch baseRenderContext(ctx) {
 	case DefinitionContext:
 		if t.table.Alias() != nil {
 			return *t.table.Alias(), paramsMap
