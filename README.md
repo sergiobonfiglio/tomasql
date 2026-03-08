@@ -10,7 +10,7 @@ TomaSQL is a type-safe SQL query builder for Go that provides a fluent API for c
 - **Type-safe**: Compile-time type checking for SQL queries
 - **Performance**: No reflection
 - **Fluent API**: Intuitive, chainable query building
-- **Rich SQL Support**: JOINs, subqueries, aggregations, and more
+- **Rich SQL Support**: JOINs, subqueries, CTEs, aggregations, and more
 - **Database Schema Integration**: Generate type-safe table definitions from your database schema
 
 ## Quick Start
@@ -131,6 +131,50 @@ sql, params := mainQuery.SQL()
 //      SELECT users.id FROM users WHERE users.age >= ?)
 ```
 
+### Common Table Expressions (CTEs)
+
+TomaSQL supports non-recursive CTEs via `CTE(...)` and `With(...)`.
+
+```go
+recentUsers := tomasql.CTE(
+    "recent_users",
+    tomasql.Select(Users.Id, Users.Name).
+        From(Users).
+        Where(Users.IsActive.EqParam(true)),
+)
+
+query := tomasql.With(recentUsers).
+    SelectAll().
+    From(recentUsers.Table())
+
+sql, params := query.SQL()
+// SQL:
+// WITH recent_users AS (SELECT users.id, users.name FROM users WHERE users.is_active = ?)
+// SELECT * FROM recent_users
+// Params: [true]
+```
+
+You can also define multiple CTEs. They are rendered in the same order passed to `With(...)`.
+
+```go
+activeUsers := tomasql.CTE(
+    "active_users",
+    tomasql.Select(Users.Id).
+        From(Users).
+        Where(Users.IsActive.EqParam(true)),
+)
+
+activePosts := tomasql.CTE(
+    "active_posts",
+    tomasql.Select(Posts.Id, Posts.UserId).
+        From(Posts),
+)
+
+query := tomasql.With(activeUsers, activePosts).
+    SelectAll().
+    From(activePosts.Table())
+```
+
 ### Working with Complex Conditions
 
 ```go
@@ -191,8 +235,18 @@ TomaSQL includes a code generation tool to create type-safe table definitions fr
 - `Select(cols ...ParametricSql)` - Start a SELECT query
 - `SelectAll()` - Start a SELECT \* query (equivalent to `Select(<GenTable>.Star())`
 - `SelectDistinct(cols ...ParametricSql)` - Start a SELECT DISTINCT query
+- `CTE(name string, query SQLable)` - Define a non-recursive common table expression
+- `With(ctes ...*CommonTableExpression)` - Start a query prefixed by a `WITH` clause
 
-Every entry point also has an alternative version which takes `Column` as parameters instead of `ParametricSql` to avoid manual casting if you have an array of columns you want to select.
+Every select entry point also has an alternative version which takes `Column` as parameters instead of `ParametricSql` to avoid manual casting if you have an array of columns you want to select.
+
+`With(...)` mirrors the select entry points and supports:
+- `With(...).Select(...)`
+- `With(...).SelectCols(...)`
+- `With(...).SelectDistinct(...)`
+- `With(...).SelectDistinctCols(...)`
+- `With(...).SelectAll()`
+- `With(...).SelectDistinctAll()`
 
 ### Comparisons
 
